@@ -1,0 +1,171 @@
+const bcrypt       = require("bcryptjs");
+const jwt          = require("jsonwebtoken");
+const otpGenerator = require("otp-generator");
+const User         = require("../models/User");
+const { sendEmail, buildOtpEmail } = require("../utils/sendEmail");
+
+// ── Token generator ───────────────────────────────────────────────────────────
+const generateToken = (id) =>
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+
+// ── REGISTER (always lawyer) ──────────────────────────────────────────────────
+const registerUser = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password)
+      return res.status(400).json({ message: "All fields are required" });
+
+    const existing = await User.findOne({ email });
+    if (existing)
+      return res.status(400).json({ message: "User already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const otp            = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars:       false,
+    });
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    const user = await User.create({
+      name,
+      email,
+      password:   hashedPassword,
+      role:       "lawyer",          // always lawyer — never admin via public register
+      otp,
+      otpExpires,
+      isVerified: false,
+    });
+
+    // Send OTP email — fire and forget, error won't crash response
+    sendEmail(
+      email,
+      "Legal Diary — Verify Your Account",
+      `Your OTP is: ${otp}. Expires in 10 minutes.`,
+      buildOtpEmail({ name, otp, purpose: "registration" })
+    );
+
+    res.status(201).json({
+      _id:     user._id,
+      name:    user.name,
+      email:   user.email,
+      message: "OTP sent to your email. Please verify to activate your account.",
+    });
+  } catch (error) {
+    console.error("❌ Register error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password)
+      return res.status(400).json({ message: "Email and password are required" });
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(401).json({ message: "Invalid email or password" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(401).json({ message: "Invalid email or password" });
+
+    if (!user.isVerified)
+      return res.status(401).json({ message: "Please verify your email first" });
+
+    if (user.isActive === false)
+      return res.status(403).json({ message: "Account deactivated. Contact admin." });
+
+    const otp        = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars:       false,
+    });
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.otp        = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // Send OTP email — fire and forget
+    sendEmail(
+      user.email,
+      "Legal Diary — Your Login OTP",
+      `Your login OTP is: ${otp}. Expires in 10 minutes.`,
+      buildOtpEmail({ name: user.name, otp, purpose: "login" })
+    );
+
+    res.status(200).json({
+      message: "OTP sent to your email",
+      email:   user.email,
+    });
+  } catch (error) {
+    console.error("❌ Login error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ── VERIFY REGISTRATION OTP ───────────────────────────────────────────────────
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
+
+    if (user.otp !== otp)
+      return res.status(400).json({ message: "Invalid OTP" });
+
+    if (new Date() > user.otpExpires)
+      return res.status(400).json({ message: "OTP expired. Please register again." });
+
+    user.isVerified = true;
+    user.otp        = null;
+    user.otpExpires = null;
+    await user.save();
+
+    res.status(200).json({ message: "Account verified. You can now log in." });
+  } catch (error) {
+    console.error("❌ VerifyOtp error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ── VERIFY LOGIN OTP ──────────────────────────────────────────────────────────
+const verifyLoginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(404).json({ message: "User not found" });
+
+    if (user.otp !== otp)
+      return res.status(400).json({ message: "Invalid OTP" });
+
+    if (new Date() > user.otpExpires)
+      return res.status(400).json({ message: "OTP expired. Please log in again." });
+
+    user.otp        = null;
+    user.otpExpires = null;
+    await user.save();
+
+    res.status(200).json({
+      _id:   user._id,
+      name:  user.name,
+      email: user.email,
+      role:  user.role,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error("❌ VerifyLoginOtp error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, verifyOtp, verifyLoginOtp };
