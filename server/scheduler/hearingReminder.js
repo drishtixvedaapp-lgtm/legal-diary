@@ -1,56 +1,54 @@
 const cron = require("node-cron");
 const Case = require("../models/Case");
 const Notification = require("../models/Notification");
-const sendEmail = require("../utils/sendEmail");
 
-// ─── Shared email sender ──────────────────────────────────────────────────────
-const sendHearingReminderEmail = async (singleCase, reminderType) => {
+// ── Correct import — sendEmail.js exports an object ──────────────────────────
+const { sendEmail, eveningReminderEmail, morningReminderEmail } = require("../utils/sendEmail");
 
+// ─── Send one reminder email ──────────────────────────────────────────────────
+const sendReminderEmail = async (singleCase, type) => {
   const client = singleCase.client;
+  const lawyer  = singleCase.assignedLawyer;
+
   if (!client?.email) {
-    console.log(`⚠️  No email for client of case: ${singleCase.caseTitle}`);
+    console.log(`⚠️  No client email — skipping: ${singleCase.caseTitle}`);
     return false;
   }
 
-  const lawyer      = singleCase.assignedLawyer;
-  const lawyerName  = lawyer?.name    || "Your Assigned Lawyer";
-  const lawyerPhone = lawyer?.phone   ? ` | ${lawyer.phone}` : "";
+  const payload = {
+    clientName  : client.name,
+    caseTitle   : singleCase.caseTitle,
+    caseNumber  : singleCase.caseNumber,
+    courtName   : singleCase.courtName,
+    date        : new Date(singleCase.nextHearing).toLocaleDateString("en-IN", {
+                    weekday: "long", year: "numeric", month: "long", day: "numeric",
+                  }),
+    time        : singleCase.hearingTime || "As scheduled",
+    lawyerName  : lawyer?.name  || "Your Assigned Lawyer",
+    lawyerPhone : lawyer?.phone || null,
+  };
 
-  const isToday    = reminderType === "morning";
-  const subjectTag = isToday ? "Today" : "Tomorrow";
-  const introLine  = isToday
-    ? "This is a reminder that your hearing is scheduled for TODAY. Please be present at the court on time."
-    : "This is a reminder that your hearing is scheduled for TOMORROW. Please make necessary arrangements.";
+  const isEvening   = type === "evening";
+  const subjectLine = isEvening
+    ? `Hearing Tomorrow – ${singleCase.caseTitle}`
+    : `Your Hearing Is Today – ${singleCase.caseTitle}`;
+
+  const plainText = isEvening
+    ? `Dear ${payload.clientName}, your hearing for ${payload.caseTitle} is tomorrow (${payload.date}).`
+    : `Dear ${payload.clientName}, your hearing for ${payload.caseTitle} is TODAY (${payload.date}).`;
 
   await sendEmail(
     client.email,
-    `Hearing Reminder – ${subjectTag} – ${singleCase.caseTitle}`,
-    `Dear ${client.name},
-
-${introLine}
-
-━━━━━━━━━━━━━━━━━━━━━━
-Case Details
-━━━━━━━━━━━━━━━━━━━━━━
-Case Title  : ${singleCase.caseTitle}
-Case Number : ${singleCase.caseNumber}
-Court       : ${singleCase.courtName}
-Date        : ${new Date(singleCase.nextHearing).toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-Time        : ${singleCase.hearingTime || "As scheduled"}
-Lawyer      : ${lawyerName}${lawyerPhone}
-
-Contact your lawyer if you have any questions.
-
-Regards,
-Legal Diary System`
+    subjectLine,
+    plainText,
+    isEvening ? eveningReminderEmail(payload) : morningReminderEmail(payload)
   );
 
   return true;
 };
 
-// ─── Shared logic to find cases and send, with duplicate guard ────────────────
-const processReminders = async (targetDate, reminderType) => {
-
+// ─── Core logic — find cases and send ────────────────────────────────────────
+const processReminders = async (targetDate, type) => {
   const start = new Date(targetDate);
   start.setHours(0, 0, 0, 0);
 
@@ -62,13 +60,12 @@ const processReminders = async (targetDate, reminderType) => {
     status      : { $ne: "Closed" },
   })
     .populate("client")
-    .populate("assignedLawyer", "name email phone");
+    .populate("assignedLawyer", "name phone");
 
-  console.log(`📋 [${reminderType}] Found ${cases.length} hearing(s)`);
+  console.log(`📋 [${type}] ${cases.length} hearing(s) found for ${targetDate.toDateString()}`);
 
   for (const singleCase of cases) {
-
-    // Duplicate guard — check if this exact reminderType was already sent today
+    // Duplicate guard
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -76,40 +73,38 @@ const processReminders = async (targetDate, reminderType) => {
       case     : singleCase._id,
       type     : "email",
       sent     : true,
-      message  : { $regex: reminderType, $options: "i" },
+      message  : { $regex: type, $options: "i" },
       updatedAt: { $gte: todayStart },
     });
 
     if (alreadySent) {
-      console.log(`⏭️  [${reminderType}] Already sent for: ${singleCase.caseTitle}`);
+      console.log(`⏭️  [${type}] Already sent — ${singleCase.caseTitle}`);
       continue;
     }
 
     try {
-      const sent = await sendHearingReminderEmail(singleCase, reminderType);
+      const sent = await sendReminderEmail(singleCase, type);
 
       if (sent) {
-        console.log(`✅ [${reminderType}] Email sent for: ${singleCase.caseTitle}`);
-
-        // Save a notification record for this specific reminder type
+        console.log(`✅ [${type}] Email sent — ${singleCase.caseTitle} → ${singleCase.client.email}`);
         await Notification.create({
           case        : singleCase._id,
           type        : "email",
           scheduledFor: singleCase.nextHearing,
-          message     : `[${reminderType}] Hearing reminder sent for ${singleCase.caseTitle}`,
+          message     : `[${type}] Reminder sent for ${singleCase.caseTitle}`,
           sent        : true,
         });
       }
     } catch (err) {
-      console.error(`❌ [${reminderType}] Error for ${singleCase.caseTitle}:`, err.message);
+      console.error(`❌ [${type}] ${singleCase.caseTitle}:`, err.message);
     }
   }
 };
 
-// ─── Main scheduler ───────────────────────────────────────────────────────────
+// ─── Register cron jobs ───────────────────────────────────────────────────────
 const startHearingReminder = () => {
 
-  // ── 1. Evening reminder — 8:00 PM, for tomorrow's hearings ──────────────────
+  // 🌙 8:00 PM — evening reminder (day before hearing)
   cron.schedule("0 20 * * *", async () => {
     console.log("🌙 [Evening Reminder] Running...");
     const tomorrow = new Date();
@@ -118,11 +113,10 @@ const startHearingReminder = () => {
     console.log("✅ [Evening Reminder] Done.");
   });
 
-  // ── 2. Morning reminder — 7:00 AM, for today's hearings ─────────────────────
+  // 🌅 7:00 AM — morning reminder (day of hearing)
   cron.schedule("0 7 * * *", async () => {
     console.log("🌅 [Morning Reminder] Running...");
-    const today = new Date();
-    await processReminders(today, "morning");
+    await processReminders(new Date(), "morning");
     console.log("✅ [Morning Reminder] Done.");
   });
 

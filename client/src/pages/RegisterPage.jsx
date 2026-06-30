@@ -1,318 +1,194 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Scale, User, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Scale, User, Mail, Lock, ArrowRight } from "lucide-react";
 import { registerUser } from "../services/authService";
- 
-const FloatingInput = ({
-  icon: Icon,
-  type,
-  name,
-  label,
-  value,
-  onChange,
-  required,
-  rightSlot,
-}) => {
-  const [focused, setFocused] = useState(false);
-  const active = focused || value.length > 0;
- 
-  return (
-    <div className="relative group">
-      <div
-        className={`
-          absolute inset-0 rounded-xl transition-all duration-300
-          ${active ? "ring-1 ring-emerald-500/60 shadow-[0_0_12px_2px_rgba(16,185,129,0.08)]" : ""}
-        `}
-        aria-hidden="true"
-      />
- 
-      {/* Icon */}
-      <div
-        className={`
-          absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200
-          ${active ? "text-emerald-400" : "text-slate-500"}
-        `}
-      >
-        <Icon size={16} />
-      </div>
- 
-      {/* Floating label */}
-      <label
-        htmlFor={name}
-        className={`
-          absolute left-11 transition-all duration-200 pointer-events-none select-none
-          ${active
-            ? "top-2 text-[10px] font-semibold tracking-widest uppercase text-emerald-400"
-            : "top-1/2 -translate-y-1/2 text-sm text-slate-400"
-          }
-        `}
-      >
-        {label}
-      </label>
- 
-      <input
-        id={name}
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        required={required}
-        autoComplete="off"
-        className={`
-          w-full bg-slate-800/60 border border-slate-700/80 rounded-xl
-          px-4 pl-11 text-white text-sm
-          transition-all duration-200
-          focus:outline-none focus:border-emerald-500/70 focus:bg-slate-800
-          placeholder-transparent
-          ${active ? "pt-6 pb-2" : "py-4"}
-          ${rightSlot ? "pr-12" : ""}
-        `}
-      />
- 
-      {rightSlot && (
-        <div className="absolute right-4 top-1/2 -translate-y-1/2">{rightSlot}</div>
-      )}
-    </div>
-  );
-};
  
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    });
+  const [showPassword, setShowPassword]   = useState(false);
+  const [loading, setLoading]             = useState(false);
+  const [focused, setFocused]             = useState(null);
+  const [formData, setFormData]           = useState({
+    name: "", email: "", password: "", confirmPassword: "",
+  });
  
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmPassword)
       return alert("Passwords do not match");
-    }
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await registerUser(formData);
-      navigate("/verify-otp", { state: { email: response.email } });
-    } catch (error) {
-      alert(error.response?.data?.message || "Registration failed");
+      const res = await registerUser({
+        name:     formData.name,
+        email:    formData.email,
+        password: formData.password,
+      });
+      navigate("/verify-otp", { state: { email: res.email } });
+    } catch (err) {
+      alert(err.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
   };
  
+  const field = (name, label, type, icon, extra) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{
+        fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+        textTransform: "uppercase", color: "rgba(255,255,255,0.4)",
+      }}>{label}</label>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        background: "rgba(255,255,255,0.05)",
+        border: `1.5px solid ${focused === name ? "#10b981" : "rgba(255,255,255,0.1)"}`,
+        borderRadius: 12, padding: "0 14px",
+        boxShadow: focused === name ? "0 0 0 3px rgba(16,185,129,0.1)" : "none",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+      }}>
+        <span style={{ color: focused === name ? "#10b981" : "rgba(255,255,255,0.3)", flexShrink: 0 }}>
+          {icon}
+        </span>
+        <input
+          name={name}
+          type={type}
+          placeholder={label}
+          value={formData[name]}
+          onChange={handleChange}
+          onFocus={() => setFocused(name)}
+          onBlur={() => setFocused(null)}
+          required
+          autoComplete="off"
+          style={{
+            flex: 1, padding: "13px 0",
+            background: "transparent", border: "none", outline: "none",
+            fontSize: 14, color: "#fff",
+            fontFamily: "'Inter', sans-serif",
+          }}
+        />
+        {extra}
+      </div>
+    </div>
+  );
+ 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #060B18 0%, #0A1128 50%, #0D1A2E 100%)" }}
-    >
-      {/* Dot-grid background */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, rgba(99,102,241,0.07) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center",
+      justifyContent: "center", padding: "24px 16px",
+      background: "linear-gradient(135deg,#060b18 0%,#0a1128 50%,#0d1a2e 100%)",
+      fontFamily: "'Inter', sans-serif",
+    }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
  
-      {/* Ambient glows */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[-120px] left-[-120px] w-[480px] h-[480px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-[-100px] right-[-80px] w-[400px] h-[400px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%)",
-        }}
-      />
- 
-      <div className="relative z-10 w-full max-w-[420px]">
         {/* Card */}
-        <div
-          className="rounded-2xl border border-slate-700/60 shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden"
-          style={{ background: "rgba(15,22,40,0.92)", backdropFilter: "blur(20px)" }}
-        >
-          {/* Top accent bar */}
-          <div
-            className="h-[3px] w-full"
-            style={{
-              background: "linear-gradient(90deg, #6366F1 0%, #10B981 100%)",
-            }}
-          />
+        <div style={{
+          background: "rgba(15,22,40,0.95)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 20,
+          boxShadow: "0 32px 64px rgba(0,0,0,0.5)",
+          overflow: "hidden",
+        }}>
+          {/* Top accent */}
+          <div style={{
+            height: 3,
+            background: "linear-gradient(90deg,#6366f1,#10b981)",
+          }} />
  
-          <div className="px-8 pt-8 pb-10">
+          <div style={{ padding: "36px 32px 40px" }}>
+ 
             {/* Header */}
-            <div className="flex flex-col items-center mb-8">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(16,185,129,0.2) 100%)",
-                  border: "1px solid rgba(99,102,241,0.3)",
-                }}
-              >
-                <Scale size={22} className="text-emerald-400" />
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14, margin: "0 auto 16px",
+                background: "linear-gradient(135deg,rgba(99,102,241,0.2),rgba(16,185,129,0.2))",
+                border: "1px solid rgba(99,102,241,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Scale size={24} color="#10b981" />
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">
+              <h1 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>
                 Create your account
               </h1>
-              <p className="text-slate-400 text-sm mt-1">
+              <p style={{ margin: 0, fontSize: 13.5, color: "rgba(255,255,255,0.4)" }}>
                 Join the Legal Diary Platform
               </p>
             </div>
  
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <FloatingInput
-                icon={User}
-                type="text"
-                name="name"
-                label="Full Name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
  
-              <FloatingInput
-                icon={Mail}
-                type="email"
-                name="email"
-                label="Email Address"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-              <FloatingInput
-                icon={Lock}
-                type={showPassword ? "text" : "password"}
-                name="password"
-                label="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                rightSlot={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-slate-500 hover:text-slate-300 transition-colors duration-150 focus:outline-none"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                }
-              />
+              {field("name", "Full Name", "text",
+                <User size={16} />
+              )}
  
-              <FloatingInput
-                icon={Lock}
-                type="password"
-                name="confirmPassword"
-                label="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-              />
+              {field("email", "Email Address", "email",
+                <Mail size={16} />
+              )}
  
-              {/* Divider */}
-              <div className="pt-2" />
+              {field("password", "Password", showPassword ? "text" : "password",
+                <Lock size={16} />,
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  style={{ background: "none", border: "none", cursor: "pointer",
+                            color: "rgba(255,255,255,0.3)", padding: 0, display: "flex" }}>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              )}
  
-              <button
-                type="submit"
-                disabled={loading}
-                className="relative w-full rounded-xl py-3.5 text-sm font-semibold text-white overflow-hidden transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-60 disabled:cursor-not-allowed group"
-                style={{
+              {field("confirmPassword", "Confirm Password", "password",
+                <Lock size={16} />
+              )}
+ 
+              <div style={{ marginTop: 8 }}>
+                <button type="submit" disabled={loading} style={{
+                  width: "100%", height: 50, borderRadius: 12, border: "none",
+                  cursor: loading ? "not-allowed" : "pointer",
                   background: loading
                     ? "rgba(16,185,129,0.4)"
-                    : "linear-gradient(135deg, #059669 0%, #10B981 100%)",
-                  boxShadow: loading
-                    ? "none"
-                    : "0 4px 20px rgba(16,185,129,0.25)",
+                    : "linear-gradient(135deg,#059669,#10b981)",
+                  color: "#fff", fontSize: 15, fontWeight: 600,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  boxShadow: loading ? "none" : "0 4px 20px rgba(16,185,129,0.3)",
+                  transition: "opacity 0.15s, transform 0.15s",
+                  fontFamily: "'Inter', sans-serif",
                 }}
-              >
-                {/* Shimmer */}
-                {!loading && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #10B981 0%, #34D399 100%)",
-                    }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center justify-center gap-2">
+                  onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={e => e.currentTarget.style.transform = "none"}
+                >
                   {loading ? (
                     <>
-                      <svg
-                        className="animate-spin h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v8z"
-                        />
-                      </svg>
+                      <span style={{
+                        width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)",
+                        borderTopColor: "#fff", borderRadius: "50%",
+                        display: "inline-block", animation: "spin 0.7s linear infinite",
+                      }} />
                       Creating account…
                     </>
                   ) : (
-                    "Create Account"
+                    <> Create Account <ArrowRight size={16} /> </>
                   )}
-                </span>
-              </button>
+                </button>
+              </div>
             </form>
  
-            {/* Footer link */}
-            <p className="mt-6 text-center text-sm text-slate-500">
+            <p style={{ textAlign: "center", fontSize: 13.5, color: "rgba(255,255,255,0.35)", marginTop: 24 }}>
               Already have an account?{" "}
-              <Link
-                to="/login"
-                className="text-emerald-400 font-semibold hover:text-emerald-300 transition-colors duration-150"
-              >
+              <Link to="/login" style={{
+                color: "#10b981", fontWeight: 600, textDecoration: "none",
+              }}>
                 Sign in
               </Link>
             </p>
           </div>
         </div>
  
-        {/* Sub-footer */}
-        <p className="mt-5 text-center text-xs text-slate-600">
-          By registering you agree to our{" "}
-          <span className="text-slate-500 hover:text-slate-400 cursor-pointer transition-colors">
-            Terms of Service
-          </span>{" "}
-          &amp;{" "}
-          <span className="text-slate-500 hover:text-slate-400 cursor-pointer transition-colors">
-            Privacy Policy
-          </span>
+        <p style={{ textAlign: "center", fontSize: 11.5, color: "rgba(255,255,255,0.2)", marginTop: 20 }}>
+          By registering you agree to our Terms of Service &amp; Privacy Policy
         </p>
       </div>
+ 
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
