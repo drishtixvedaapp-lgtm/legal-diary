@@ -40,7 +40,7 @@ const registerUser = async (req, res) => {
     // Fire-and-forget — email failure must never crash the response
     sendEmail(
       email,
-      "Legal Diary — Verify Your Account",
+      "VakilSummons — Verify Your Account",
       `Your OTP is: ${otp}. Expires in 10 minutes.`,
       buildOtpEmail({ name, otp, purpose: "registration" })
     );
@@ -88,7 +88,7 @@ const loginUser = async (req, res) => {
  
     sendEmail(
       user.email,
-      "Legal Diary — Your Login OTP",
+      "VakilSummons — Your Login OTP",
       `Your login OTP is: ${otp}. Expires in 10 minutes.`,
       buildOtpEmail({ name: user.name, otp, purpose: "login" })
     );

@@ -37,7 +37,7 @@ const buildWAMessage = (type, client, caseDoc, lawyerName, lawyerPhone) => {
       ? "Your court hearing is scheduled for TODAY. Please be present on time."
       : "Your court hearing is scheduled for TOMORROW. Please make necessary arrangements.";
 
-    return `⚖️ *Legal Diary${type === "newCase" ? " — New Hearing Scheduled" : type === "updated" ? " — Hearing Date Updated" : ` — Hearing Reminder (${when})`}*
+    return `⚖️ *VakilSummons${type === "newCase" ? " — New Hearing Scheduled" : type === "updated" ? " — Hearing Date Updated" : ` — Hearing Reminder (${when})`}*
 
 Dear ${client.name},
 
@@ -58,7 +58,7 @@ ${isToday || type === "newCase" || type === "updated"
   ? "Please carry all relevant documents to court."
   : "Please be present at the court 15 minutes early."}
 
-— Legal Diary System`;
+— VakilSummons System`;
   }
 
   // ── TELUGU ─────────────────────────────────────────────────────────────────

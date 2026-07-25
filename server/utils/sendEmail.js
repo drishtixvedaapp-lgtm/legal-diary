@@ -57,7 +57,7 @@ const layout = (accentColor, headerIcon, headerTitle, headerSub, body) => `
                     </div>
                   </td>
                   <td style="vertical-align:middle;">
-                    <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.55);">Legal Diary</p>
+                    <p style="margin:0;font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.55);">VakilSummons</p>
                     <h1 style="margin:3px 0 0;font-size:20px;font-weight:700;color:${T.white};letter-spacing:-0.3px;line-height:1.2;">${e(headerTitle)}</h1>
                   </td>
                 </tr>
@@ -74,7 +74,7 @@ const layout = (accentColor, headerIcon, headerTitle, headerSub, body) => `
     ${body}
     <tr>
       <td style="background:${T.slate50};border-top:1px solid ${T.slate200};padding:20px 40px;text-align:center;">
-        <p style="margin:0 0 6px;font-size:12px;color:${T.slate400};">This is an automated notification from <strong style="color:${T.slate500};">Legal Diary</strong>.</p>
+        <p style="margin:0 0 6px;font-size:12px;color:${T.slate400};">This is an automated notification from <strong style="color:${T.slate500};">VakilSummons</strong>.</p>
         <p style="margin:0;font-size:11px;color:${T.slate400};">Please do not reply to this email. Contact your lawyer directly for queries.</p>
       </td>
     </tr>
@@ -252,8 +252,8 @@ const buildOtpEmail = ({ name, otp, purpose }) => {
   const icon     = isLogin ? "🔐" : "✅";
   const title    = isLogin ? "Login Verification" : "Verify Your Account";
   const introText = isLogin
-    ? "You requested to log in to your Legal Diary account. Use the OTP below to complete your login."
-    : "Thank you for registering on Legal Diary. Use the OTP below to verify your email address.";
+    ? "You requested to log in to your VakilSummons account. Use the OTP below to complete your login."
+    : "Thank you for registering on VakilSummons. Use the OTP below to verify your email address.";
 
   return layout(accent, icon, title, null,
     `<table width="100%" cellpadding="0" cellspacing="0">
@@ -286,7 +286,7 @@ const sendEmail = async (to, subject, text, html) => {
   try {
     const transporter = createTransporter();
     await transporter.sendMail({
-      from : `"Legal Diary" <${process.env.EMAIL_USER}>`,
+      from : `"VakilSummons" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       text,

@@ -117,7 +117,7 @@ Lawyer        : ${lawyerName}${lawyerContact}
 Please contact your lawyer if you have any questions.
 
 Regards,
-Legal Diary System`
+VakilSummons System`
           );
 
           console.log(`✅ Outcome email sent to ${client.email}`);
