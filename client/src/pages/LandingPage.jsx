@@ -45,7 +45,7 @@ const LandingPage = () => {
           }}>
             <Scale size={18} color="#fff" />
           </div>
-          <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.3px" }}>Legal Diary</span>
+          <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.3px" }}>VakilSummons</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button onClick={() => navigate("/login")} style={{
@@ -106,7 +106,7 @@ const LandingPage = () => {
           margin: "0 auto 40px", fontSize: 18, lineHeight: 1.7,
           color: "rgba(255,255,255,0.55)", maxWidth: 600,
         }}>
-          Legal Diary keeps your hearings, clients, documents and reminders in one secure place —
+          VakilSummons keeps your hearings, clients, documents and reminders in one secure place —
           so you can focus on winning cases, not chasing paperwork.
         </p>
 
@@ -173,7 +173,7 @@ const LandingPage = () => {
             Everything You Need
           </p>
           <h2 style={{ margin: 0, fontSize: 32, fontWeight: 800, letterSpacing: "-0.4px" }}>
-            Built for Indian Advocates
+            Built for Indian Advocates & Law Firms
           </h2>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
@@ -243,7 +243,7 @@ const LandingPage = () => {
             Ready to organise your practice?
           </h2>
           <p style={{ margin: "0 0 28px", fontSize: 15, color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>
-            Join Legal Diary today and never miss a hearing date again.
+            Join VakilSummons today and never miss a hearing date again.
           </p>
           <button onClick={() => navigate("/register")} style={{
             display: "inline-flex", alignItems: "center", gap: 10,
@@ -268,10 +268,10 @@ const LandingPage = () => {
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8 }}>
           <Scale size={16} color="#3b82f6" />
-          <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>Legal Diary</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>VakilSummons</span>
         </div>
         <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
-          © {new Date().getFullYear()} Legal Diary — Advocate Case Management System
+          © {new Date().getFullYear()} VakilSummons — Advocate Case Management System
         </p>
       </footer>
 

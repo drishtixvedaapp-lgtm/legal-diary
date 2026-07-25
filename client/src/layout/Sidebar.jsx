@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Briefcase, CalendarDays,
-  Bell, Scale, Archive, LogOut, ChevronRight,
+  Bell, Scale, Archive, LogOut, ChevronRight, UserCircle,
 } from "lucide-react";
 import { isAdmin, isLawyer } from "../utils/roleHelper";
 
@@ -18,6 +18,7 @@ const Sidebar = () => {
       { name: "History",      path: "/history",       icon: Archive    },
     ] : []),
     { name: "Notifications",  path: "/notifications", icon: Bell       },
+    { name: "My Profile",      path: "/profile",        icon: UserCircle },
     ...(isAdmin() ? [
       { name: "Admin Panel",  path: "/admin",         icon: Scale      },
     ] : []),
@@ -46,7 +47,7 @@ const Sidebar = () => {
             <Scale size={20} color="#fff" />
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>Legal Diary</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>VakilSummons</p>
             <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>Advocate Management</p>
           </div>
         </div>

@@ -46,7 +46,7 @@ const Sidebar = () => {
             <Scale size={20} color="#fff" />
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>Legal Diary</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "-0.3px" }}>VakilSummons</p>
             <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>Advocate Management</p>
           </div>
         </div>

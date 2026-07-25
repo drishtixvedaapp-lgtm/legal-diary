@@ -31,7 +31,7 @@ const AdminLayout = () => {
               <Scale size={20} color="#fff" />
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff" }}>Legal Diary</p>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff" }}>VakilSummons</p>
               <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>Admin Panel</p>
             </div>
           </div>

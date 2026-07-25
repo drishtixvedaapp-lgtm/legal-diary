@@ -112,7 +112,7 @@ const RegisterPage = () => {
                 Create your account
               </h1>
               <p style={{ margin: 0, fontSize: 13.5, color: "rgba(255,255,255,0.4)" }}>
-                Join the Legal Diary Platform
+                Join the VakilSummons Platform
               </p>
             </div>
  
