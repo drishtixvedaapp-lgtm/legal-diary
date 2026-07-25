@@ -8,7 +8,7 @@ const path     = require("path");
 
 const connectDB               = require("./config/db");
 const startHearingReminder    = require("./scheduler/hearingReminder");
-
+const { startWhatsApp } = require("./utils/whatsappClient");
 const authRoutes              = require("./routes/authRoutes");
 const clientRoutes            = require("./routes/clientRoutes");
 const caseRoutes              = require("./routes/caseRoutes");
@@ -19,9 +19,10 @@ const hearingOutcomeRoutes    = require("./routes/hearingOutcomeRoutes");
 const dashboardRoutes         = require("./routes/dashboardRoutes");
 const adminRoutes             = require("./routes/adminRoutes");
 const timelineRoutes          = require("./routes/timelineRoutes");
-
+const profileRoutes = require("./routes/profileRoutes");
 // ── Connect DB & start scheduler ──────────────────────────────────────────────
 connectDB();
+startWhatsApp();
 startHearingReminder();
 
 const app = express();
@@ -36,7 +37,7 @@ app.use(express.json());
 
 // ── Serve uploaded files ──────────────────────────────────────────────────────
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
+app.use("/api/profile", profileRoutes);
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use("/api/auth",             authRoutes);
 app.use("/api/clients",          clientRoutes);

@@ -21,6 +21,7 @@ import VerifyLoginOtpPage   from "./pages/VerifyLoginOtpPage";
 import UserManagement       from "./pages/UserManagement";
 import AdminLayout          from "./layout/AdminLayout";
 import DiaryPage            from "./pages/DiaryPage";
+import ProfilePage          from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
                   <Route path="/calendar"           element={<CalendarPage />} />
                   <Route path="/notifications"      element={<NotificationsPage />} />
                   <Route path="/history"            element={<HistoryPage />} />
+                  <Route path="/profile"            element={<ProfilePage />} />
                   {isAdmin() && <Route path="/admin-page" element={<AdminPage />} />}
                 </Routes>
               </div>

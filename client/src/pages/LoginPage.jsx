@@ -49,7 +49,7 @@ const LoginPage = () => {
           </div>
           <h1 style={{ margin:"0 0 8px", fontSize:30, fontWeight:700, color:"#fff",
                        letterSpacing:"-0.5px", fontFamily:"'Playfair Display',Georgia,serif" }}>
-            Legal Diary
+            VakilSummons
           </h1>
           <p style={{ margin:"0 0 32px", fontSize:12, fontWeight:600, letterSpacing:"0.14em",
                       textTransform:"uppercase", color:"#b45309" }}>

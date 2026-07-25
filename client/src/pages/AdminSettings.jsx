@@ -57,7 +57,7 @@ const AdminSettings = () => {
 
         {/* System Info */}
         <Card title="System Information">
-          <Row label="Application"     value="Legal Diary" />
+          <Row label="Application"     value="VakilSummons" />
           <Row label="Version"         value="1.0.0" />
           <Row label="Environment"     value="Production" badge />
           <Row label="Node.js Runtime" value="Express.js + MongoDB" />
