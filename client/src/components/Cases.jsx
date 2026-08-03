@@ -213,6 +213,7 @@ const Cases = () => {
   const [cases,           setCases]           = useState([]);
   const [clients,         setClients]         = useState([]);
   const [deletingId,      setDeletingId]      = useState(null);
+  const [reminderState,   setReminderState]   = useState({}); // { [caseId]: "sending" | "sent" | "error" }
   const [submitting,      setSubmitting]      = useState(false);
   const [formData,        setFormData]        = useState(defaultForm);
   const [showClientModal, setShowClientModal] = useState(false);
@@ -275,6 +276,21 @@ const Cases = () => {
     setDeletingId(id);
     try { await deleteCase(id); await fetchAll(); } catch(e){ alert("Delete failed"); }
     finally { setDeletingId(null); }
+  };
+
+  const handleReminder = async (c) => {
+    if (!c.nextHearing) { alert("This case has no hearing date set, so a reminder can't be scheduled."); return; }
+    setReminderState(prev => ({ ...prev, [c._id]: "sending" }));
+    try {
+      await createReminder({ caseId: c._id, scheduledFor: c.nextHearing, message: `${c.caseTitle} - Hearing Reminder` });
+      setReminderState(prev => ({ ...prev, [c._id]: "sent" }));
+    } catch (e) {
+      console.error(e);
+      setReminderState(prev => ({ ...prev, [c._id]: "error" }));
+      alert(e.response?.data?.message || "Failed to schedule reminder. Please try again.");
+      return;
+    }
+    setTimeout(() => setReminderState(prev => ({ ...prev, [c._id]: undefined })), 3000);
   };
 
   const handleSubmit = async (e) => {
@@ -620,7 +636,7 @@ const Cases = () => {
                         { label:"📖 Diary",   bg:"#f5f3ff", color:"#7c3aed", border:"#ddd6fe", onClick:() => navigate(`/cases/${c._id}/diary`) },
                         { label:"✏️ Edit",    bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", onClick:() => handleEdit(c) },
                         { label:`🗑 ${deletingId===c._id?"…":"Delete"}`, bg:"#fff1f2", color:"#be123c", border:"#fecdd3", onClick:() => handleDelete(c._id), disabled: deletingId===c._id },
-                        { label:"⏰ Reminder", bg:"#fff7ed", color:"#c2410c", border:"#fed7aa", onClick:() => createReminder({ caseId:c._id, scheduledFor:c.nextHearing, message:`${c.caseTitle} - Hearing Reminder` }) },
+                        { label: reminderState[c._id]==="sending" ? "⏳ Sending…" : reminderState[c._id]==="sent" ? "✅ Reminder Set" : reminderState[c._id]==="error" ? "⚠️ Failed — Retry" : "⏰ Reminder", bg:"#fff7ed", color:"#c2410c", border:"#fed7aa", onClick:() => handleReminder(c), disabled: reminderState[c._id]==="sending" },
                         { label:"⚖️ Outcome", bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", onClick:() => navigate(`/cases/${c._id}/outcome`) },
                       ].map(({ label, bg, color, border, onClick, disabled }) => (
                         <button key={label} onClick={onClick} disabled={disabled} style={{ display:"inline-flex", alignItems:"center", gap:6, background:bg, color, border:`1.5px solid ${border}`, borderRadius:9, padding:"8px 14px", fontSize:13, fontWeight:600, cursor: disabled ? "not-allowed" : "pointer", fontFamily:"inherit", transition:"all 0.15s", opacity: disabled ? 0.6 : 1 }}>
