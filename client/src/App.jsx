@@ -42,10 +42,14 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index                element={<AdminDashboard />} />
           <Route path="users"         element={<UserManagement />} />
+          <Route path="clients"       element={<ClientsPage />} />
           <Route path="cases"         element={<AdminCases />} />
           <Route path="cases/:id/diary"   element={<DiaryPage />} />
           <Route path="cases/:id/outcome" element={<HearingOutcomePage />} />
+          <Route path="calendar"      element={<CalendarPage />} />
+          <Route path="history"       element={<HistoryPage />} />
           <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="profile"       element={<ProfilePage />} />
           <Route path="settings"      element={<AdminSettings />} />
         </Route>
 

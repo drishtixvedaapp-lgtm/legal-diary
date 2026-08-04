@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, Briefcase, Bell, Settings, LogOut, Scale, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Bell, Settings, LogOut, Scale, ChevronRight, Contact, CalendarDays, Archive, UserCircle } from "lucide-react";
 
 const AdminLayout = () => {
   const location = useLocation();
@@ -8,8 +8,12 @@ const AdminLayout = () => {
   const menu = [
     { name: "Dashboard",      path: "/admin",               icon: LayoutDashboard },
     { name: "Users",          path: "/admin/users",         icon: Users           },
+    { name: "Clients",        path: "/admin/clients",       icon: Contact         },
     { name: "Cases",          path: "/admin/cases",         icon: Briefcase       },
+    { name: "Calendar",       path: "/admin/calendar",      icon: CalendarDays    },
+    { name: "History",        path: "/admin/history",       icon: Archive         },
     { name: "Notifications",  path: "/admin/notifications", icon: Bell            },
+    { name: "My Profile",     path: "/admin/profile",       icon: UserCircle      },
     { name: "Settings",       path: "/admin/settings",      icon: Settings        },
   ];
 
