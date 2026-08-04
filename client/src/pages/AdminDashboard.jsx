@@ -23,14 +23,40 @@ const StatCard = ({ label, value, icon:Icon, accent }) => (
 
 const AdminDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
-  useEffect(() => { getAdminAnalytics().then(setAnalytics).catch(console.log); }, []);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!analytics) return (
+  const load = () => {
+    setLoading(true);
+    setError(null);
+    getAdminAnalytics()
+      .then(data => { setAnalytics(data); setLoading(false); })
+      .catch(err => {
+        console.log(err);
+        setError(err.response?.data?.message || "Couldn't load analytics. Check that the server is reachable.");
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => { load(); }, []);
+
+  if (loading) return (
     <div style={{ display:"flex", alignItems:"center", gap:10, color:"rgba(255,255,255,0.5)", fontSize:14, padding:20 }}>
       <span className="spin" style={{ display:"inline-block", width:18, height:18, border:"2px solid rgba(255,255,255,0.2)", borderTopColor:"#2563eb", borderRadius:"50%" }} />
       Loading analytics…
     </div>
   );
+
+  if (error) return (
+    <div style={{ background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:14, padding:24, color:"#fca5a5", fontSize:14 }}>
+      <p style={{ margin:"0 0 12px", fontWeight:600 }}>{error}</p>
+      <button onClick={load} style={{ background:"rgba(239,68,68,0.15)", border:"1px solid rgba(239,68,68,0.4)", color:"#fca5a5", padding:"8px 18px", borderRadius:8, cursor:"pointer", fontSize:13, fontWeight:600 }}>
+        Retry
+      </button>
+    </div>
+  );
+
+  if (!analytics) return null;
 
   return (
     <div>

@@ -43,6 +43,8 @@ function App() {
           <Route index                element={<AdminDashboard />} />
           <Route path="users"         element={<UserManagement />} />
           <Route path="cases"         element={<AdminCases />} />
+          <Route path="cases/:id/diary"   element={<DiaryPage />} />
+          <Route path="cases/:id/outcome" element={<HearingOutcomePage />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="settings"      element={<AdminSettings />} />
         </Route>

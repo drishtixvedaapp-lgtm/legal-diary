@@ -3,6 +3,7 @@ import { getCases, createCase, updateCase, deleteCase } from "../services/caseSe
 import { createReminder } from "../services/notificationService";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getClients, createClient } from "../services/clientService";
+import { isAdmin } from "../utils/roleHelper";
 
 // Case prefix options
 const casePrefixes = ["A","FA","RP","CC","AEA","WP","OS","CS","CRP","EP","AS","MA","SA","IA","Other"];
@@ -633,11 +634,11 @@ const Cases = () => {
                     {/* Action buttons */}
                     <div style={{ display:"flex", flexDirection:"column", gap:8, flexShrink:0 }}>
                       {[
-                        { label:"📖 Diary",   bg:"#f5f3ff", color:"#7c3aed", border:"#ddd6fe", onClick:() => navigate(`/dashboard/cases/${c._id}/diary`) },
+                        { label:"📖 Diary",   bg:"#f5f3ff", color:"#7c3aed", border:"#ddd6fe", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/diary`) },
                         { label:"✏️ Edit",    bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", onClick:() => handleEdit(c) },
                         { label:`🗑 ${deletingId===c._id?"…":"Delete"}`, bg:"#fff1f2", color:"#be123c", border:"#fecdd3", onClick:() => handleDelete(c._id), disabled: deletingId===c._id },
                         { label: reminderState[c._id]==="sending" ? "⏳ Sending…" : reminderState[c._id]==="sent" ? "✅ Reminder Set" : reminderState[c._id]==="error" ? "⚠️ Failed — Retry" : "⏰ Reminder", bg:"#fff7ed", color:"#c2410c", border:"#fed7aa", onClick:() => handleReminder(c), disabled: reminderState[c._id]==="sending" },
-                        { label:"⚖️ Outcome", bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", onClick:() => navigate(`/dashboard/cases/${c._id}/outcome`) },
+                        { label:"⚖️ Outcome", bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/outcome`) },
                       ].map(({ label, bg, color, border, onClick, disabled }) => (
                         <button key={label} onClick={onClick} disabled={disabled} style={{ display:"inline-flex", alignItems:"center", gap:6, background:bg, color, border:`1.5px solid ${border}`, borderRadius:9, padding:"8px 14px", fontSize:13, fontWeight:600, cursor: disabled ? "not-allowed" : "pointer", fontFamily:"inherit", transition:"all 0.15s", opacity: disabled ? 0.6 : 1 }}>
                           {label}

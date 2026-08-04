@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createOutcome } from "../services/hearingOutcomeService";
 import { getCaseById } from "../services/caseService";
+import { isAdmin } from "../utils/roleHelper";
 
 const styles = {
   page: {
@@ -327,7 +328,7 @@ const HearingOutcomePage = () => {
       await createOutcome({ caseId: id, ...formData });
       if (formData.outcome === "Case Disposed") {
         alert("Case Closed Successfully");
-        setTimeout(() => { navigate("/dashboard/cases"); }, 2500);
+        setTimeout(() => { navigate(isAdmin() ? "/admin/cases" : "/dashboard/cases"); }, 2500);
       } else {
         alert("Outcome Saved Successfully");
       }
