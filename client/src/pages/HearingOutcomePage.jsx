@@ -327,7 +327,7 @@ const HearingOutcomePage = () => {
       await createOutcome({ caseId: id, ...formData });
       if (formData.outcome === "Case Disposed") {
         alert("Case Closed Successfully");
-        setTimeout(() => { navigate("/cases"); }, 2500);
+        setTimeout(() => { navigate("/dashboard/cases"); }, 2500);
       } else {
         alert("Outcome Saved Successfully");
       }

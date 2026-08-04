@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage        from "./pages/LandingPage";
 import AdminPage          from "./pages/AdminPage";
 import VerifyOtpPage      from "./pages/VerifyOtpPage";
@@ -29,8 +29,8 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* ── Landing page ── */}
-        <Route path="/welcome"          element={<LandingPage />} />
+        {/* ── Landing page — public marketing site at the root domain ── */}
+        <Route path="/"                 element={<LandingPage />} />
 
         {/* ── Auth pages ── */}
         <Route path="/login"            element={<LoginPage />} />
@@ -47,8 +47,8 @@ function App() {
           <Route path="settings"      element={<AdminSettings />} />
         </Route>
 
-        {/* ── ALL dashboard routes at root — exactly as before ── */}
-        <Route path="/*" element={
+        {/* ── Lawyer dashboard — all under /dashboard ── */}
+        <Route path="/dashboard/*" element={
           <ProtectedRoute>
             <div style={{ display: "flex", background: "#f1f5f9", minHeight: "100vh" }}>
               <Sidebar />
@@ -69,6 +69,9 @@ function App() {
             </div>
           </ProtectedRoute>
         } />
+
+        {/* Catch all — redirect to landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
     </BrowserRouter>

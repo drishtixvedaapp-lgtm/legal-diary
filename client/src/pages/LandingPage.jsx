@@ -9,11 +9,8 @@ const GOLD2  = "#e8c96a";
 const CREAM  = "#faf8f3";
 const WHITE  = "#ffffff";
 
-/* ── Inline style helpers ── */
-const s = (obj) => obj;
-
 /* ── Animated counter ── */
-const Counter = ({ to, duration = 1500 }) => {
+const Counter = ({ to, duration = 1400 }) => {
   const [val, setVal] = useState(0);
   const ref = useRef(null);
   useEffect(() => {
@@ -49,95 +46,62 @@ const useReveal = () => {
   return [ref, visible];
 };
 
-/* ── Lady Justice SVG (pure geometric, no copyright) ── */
-const JusticeSVG = ({ animated }) => (
-  <svg viewBox="0 0 200 280" width="200" height="280" style={{ overflow:"visible" }}>
-    <defs>
-      <filter id="glow">
-        <feGaussianBlur stdDeviation="3" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
-
-    {/* Laurel wreath circle */}
-    <circle cx="100" cy="110" r="95" fill="none" stroke={GOLD} strokeWidth="1.5" opacity="0.4"/>
-
-    {/* Scales */}
-    {/* Center pole */}
-    <line x1="100" y1="30" x2="100" y2="150" stroke={GOLD} strokeWidth="3" strokeLinecap="round"/>
-    {/* Crossbar */}
-    <line x1="40" y1="60" x2="160" y2="60" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"/>
-    {/* Left chain */}
-    <line x1="55" y1="60" x2="45" y2="95" stroke={GOLD} strokeWidth="1.5"/>
-    <line x1="70" y1="60" x2="80" y2="95" stroke={GOLD} strokeWidth="1.5"/>
-    {/* Right chain */}
-    <line x1="130" y1="60" x2="120" y2="95" stroke={GOLD} strokeWidth="1.5"/>
-    <line x1="145" y1="60" x2="155" y2="95" stroke={GOLD} strokeWidth="1.5"/>
-
-    {/* Left pan */}
-    <path d="M35,97 Q62,105 85,97" fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"
-          style={animated ? { transformOrigin:"62px 97px", animation:"swingL 3s ease-in-out infinite" } : {}}/>
-    {/* Right pan */}
-    <path d="M115,97 Q138,105 165,97" fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"
-          style={animated ? { transformOrigin:"140px 97px", animation:"swingR 3s ease-in-out infinite" } : {}}/>
-
-    {/* Top knob */}
-    <circle cx="100" cy="28" r="5" fill={GOLD} filter="url(#glow)"/>
-
-    {/* Figure body — Lady Justice silhouette */}
-    {/* Head */}
-    <circle cx="100" cy="158" r="12" fill={NAVY} stroke={GOLD} strokeWidth="1.5"/>
-    {/* Blindfold */}
-    <line x1="88" y1="158" x2="112" y2="158" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"/>
-    {/* Body */}
-    <path d="M88,170 Q82,190 78,220 L122,220 Q118,190 112,170 Z" fill={NAVY} stroke={GOLD} strokeWidth="1"/>
-    {/* Left arm (holding scales) */}
-    <line x1="100" y1="175" x2="65" y2="155" stroke={NAVY} strokeWidth="8" strokeLinecap="round"/>
-    <line x1="65" y1="155" x2="62" y2="140" stroke={GOLD} strokeWidth="2" strokeLinecap="round"/>
-    {/* Right arm (sword) */}
-    <line x1="100" y1="178" x2="138" y2="195" stroke={NAVY} strokeWidth="8" strokeLinecap="round"/>
-    <line x1="134" y1="192" x2="148" y2="222" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round"/>
-    <line x1="140" y1="206" x2="154" y2="206" stroke={GOLD} strokeWidth="2" strokeLinecap="round"/>
-    {/* Book at feet */}
-    <rect x="78" y="218" width="44" height="8" rx="2" fill={GOLD} opacity="0.8"/>
-    <line x1="100" y1="218" x2="100" y2="226" stroke={NAVY} strokeWidth="1"/>
-    {/* Robe/dress bottom */}
-    <path d="M78,220 Q70,240 65,255 L135,255 Q130,240 122,220 Z" fill={NAVY} stroke={GOLD} strokeWidth="0.8" opacity="0.9"/>
-
-    {/* Court building silhouette */}
-    <rect x="20" y="238" width="160" height="30" fill={NAVY} opacity="0.3"/>
-    <rect x="35" y="225" width="130" height="15" fill={NAVY} opacity="0.25"/>
-    {/* Columns */}
-    {[50,75,100,125,150].map(x => (
-      <rect key={x} x={x-3} y="210" width="6" height="30" fill={GOLD} opacity="0.15"/>
-    ))}
-    {/* Dome */}
-    <ellipse cx="100" cy="228" rx="40" ry="15" fill="none" stroke={GOLD} strokeWidth="1" opacity="0.3"/>
-
-    {/* Laurel leaves - left */}
-    {[-60,-45,-30,-15,0,15,30,45,60].map((a,i) => {
-      const rad = (a - 90) * Math.PI / 180;
-      const x = 100 + 95 * Math.cos(rad);
-      const y = 110 + 95 * Math.sin(rad);
-      return <ellipse key={i} cx={x} cy={y} rx="7" ry="3"
-        transform={`rotate(${a+20},${x},${y})`}
-        fill={GOLD} opacity="0.35"/>;
-    })}
-    {/* Laurel leaves - right */}
-    {[120,135,150,165,180,195,210,225,240].map((a,i) => {
-      const rad = (a - 90) * Math.PI / 180;
-      const x = 100 + 95 * Math.cos(rad);
-      const y = 110 + 95 * Math.sin(rad);
-      return <ellipse key={i} cx={x} cy={y} rx="7" ry="3"
-        transform={`rotate(${a-20},${x},${y})`}
-        fill={GOLD} opacity="0.35"/>;
-    })}
-
-    {/* Ashoka emblem suggestion */}
-    <circle cx="100" cy="18" r="7" fill="none" stroke={GOLD} strokeWidth="1" opacity="0.6"/>
-    <circle cx="100" cy="18" r="2" fill={GOLD} opacity="0.6"/>
-
-  </svg>
+/* ── Seal medallion — the real VakilSummons emblem, animated as the hero's
+     signature moment. The source artwork sits on a near-white plate, so it's
+     mounted like a physical medallion/certificate rather than faked into
+     transparency — that's a deliberate framing, not a workaround. ── */
+const SealMedallion = ({ phase }) => (
+  <div style={{ position: "relative", display: "inline-block" }}>
+    {/* Outer slow-rotating ring */}
+    <div style={{
+      position: "absolute", top: "50%", left: "50%",
+      width: "128%", height: "128%", transform: "translate(-50%,-50%)",
+      border: `1px solid rgba(201,168,76,0.28)`, borderRadius: "50%",
+      animation: phase >= 1 ? "rotateSlow 46s linear infinite" : "none",
+    }}/>
+    {/* Inner counter-rotating dashed ring */}
+    <div style={{
+      position: "absolute", top: "50%", left: "50%",
+      width: "116%", height: "116%", transform: "translate(-50%,-50%)",
+      border: `1px dashed rgba(201,168,76,0.18)`, borderRadius: "50%",
+      animation: phase >= 1 ? "rotateSlow 30s linear infinite reverse" : "none",
+    }}/>
+    {/* Stamp-impact flash ring — fires once as the seal settles */}
+    <div style={{
+      position: "absolute", top: "50%", left: "50%",
+      width: "100%", height: "100%", transform: "translate(-50%,-50%) scale(0.85)",
+      border: `2px solid ${GOLD}`, borderRadius: "50%",
+      opacity: 0,
+      animation: phase >= 1 ? "sealFlash 1s ease-out 0.55s" : "none",
+    }}/>
+    {/* Ambient glow */}
+    <div style={{
+      position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+      width: "150%", height: "150%",
+      background: "radial-gradient(circle, rgba(201,168,76,0.16) 0%, transparent 68%)",
+      pointerEvents: "none",
+    }}/>
+    {/* The medallion plate */}
+    <div style={{
+      position: "relative",
+      width: "clamp(200px, 26vw, 300px)",
+      aspectRatio: "800 / 564",
+      background: "linear-gradient(160deg, #fdfcf9, #f3efe4)",
+      borderRadius: 24,
+      border: `1.5px solid rgba(201,168,76,0.55)`,
+      boxShadow: "0 20px 60px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.5) inset, 0 0 0 6px rgba(15,39,68,0.35)",
+      padding: "6%",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      animation: phase >= 1 ? "float 5s ease-in-out infinite 1.6s" : "none",
+    }}>
+      <img
+        src="/brand/vakil-seal-emblem.png"
+        alt="VakilSummons — Lady Justice seal with the Ashoka emblem and Parliament dome"
+        style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+        draggable={false}
+      />
+    </div>
+  </div>
 );
 
 /* ── Feature card ── */
@@ -160,7 +124,8 @@ const FeatureCard = ({ icon, title, desc, delay }) => {
   );
 };
 
-/* ── Stat box ── */
+/* ── Stat box — every number here is a real, defensible product fact,
+     not an adoption metric we can't back up ── */
 const StatBox = ({ num, label, suffix = "+" }) => {
   const [ref, visible] = useReveal();
   return (
@@ -178,15 +143,15 @@ const StatBox = ({ num, label, suffix = "+" }) => {
 ═══════════════════════════════════════════════════════════════ */
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState(0); // 0=loading 1=logo 2=tagline 3=full
+  const [phase, setPhase] = useState(0); // 0=loading 1=seal 2=tagline 3=full
   const [typed, setTyped] = useState("");
   const fullName = "VAKIL SUMMONS";
 
   /* Entrance animation sequence */
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 400);
-    const t2 = setTimeout(() => setPhase(2), 1200);
-    const t3 = setTimeout(() => setPhase(3), 2800);
+    const t1 = setTimeout(() => setPhase(1), 350);
+    const t2 = setTimeout(() => setPhase(2), 1250);
+    const t3 = setTimeout(() => setPhase(3), 2850);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
@@ -206,7 +171,6 @@ const LandingPage = () => {
     return () => clearInterval(interval);
   }, [phase]);
 
-  const [heroRef, heroVisible] = useReveal();
   const [aboutRef, aboutVisible] = useReveal();
 
   return (
@@ -215,38 +179,23 @@ const LandingPage = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
-        @keyframes swingL {
-          0%,100% { transform: rotate(-3deg); }
-          50%      { transform: rotate(3deg); }
+        @keyframes swingL { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @keyframes swingR { 0%,100% { transform: rotate(3deg); } 50% { transform: rotate(-3deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+        @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+        @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        @keyframes rotateSlow { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+        @keyframes sealFlash {
+          0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(0.85); }
+          100% { opacity: 0;   transform: translate(-50%,-50%) scale(1.55); }
         }
-        @keyframes swingR {
-          0%,100% { transform: rotate(3deg); }
-          50%      { transform: rotate(-3deg); }
+        @keyframes grainDrift { from { transform: translate(0,0); } to { transform: translate(-40px,-40px); } }
+
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.7); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-        @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        @keyframes pulse {
-          0%,100% { opacity: 0.6; }
-          50%      { opacity: 1; }
-        }
-        @keyframes float {
-          0%,100% { transform: translateY(0px); }
-          50%      { transform: translateY(-12px); }
-        }
-        @keyframes rotateSlow {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
+
         .btn-gold {
           display: inline-flex; align-items: center; gap: 10px;
           background: linear-gradient(135deg, #c9a84c, #e8c96a, #c9a84c);
@@ -258,40 +207,35 @@ const LandingPage = () => {
           font-family: 'Inter', sans-serif;
           box-shadow: 0 4px 24px rgba(201,168,76,0.4);
         }
-        .btn-gold:hover {
-          background-position: right center;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 32px rgba(201,168,76,0.6);
-        }
+        .btn-gold:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,0.6); }
+        .btn-gold:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
         .btn-outline {
           display: inline-flex; align-items: center; gap: 10px;
-          background: transparent;
-          color: #fff; font-weight: 500; font-size: 15px;
+          background: transparent; color: #fff; font-weight: 500; font-size: 15px;
           padding: 14px 32px; border-radius: 50px;
           border: 1.5px solid rgba(255,255,255,0.3);
           cursor: pointer; letter-spacing: 0.03em;
           transition: all 0.2s; font-family: 'Inter', sans-serif;
         }
-        .btn-outline:hover {
-          border-color: #c9a84c; color: #c9a84c;
-          background: rgba(201,168,76,0.08);
-        }
+        .btn-outline:hover { border-color: #c9a84c; color: #c9a84c; background: rgba(201,168,76,0.08); }
+        .btn-outline:focus-visible { outline: 2px solid #c9a84c; outline-offset: 3px; }
         .nav-link {
           color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 500;
           text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase;
-          transition: color 0.2s; padding: 6px 0;
-          border-bottom: 2px solid transparent;
+          transition: color 0.2s; padding: 6px 0; border-bottom: 2px solid transparent;
         }
         .nav-link:hover { color: #c9a84c; border-bottom-color: #c9a84c; }
-        .gold-divider {
-          width: 60px; height: 2px;
-          background: linear-gradient(90deg, transparent, #c9a84c, transparent);
-          margin: 16px auto;
-        }
+        .gold-divider { width: 60px; height: 2px; background: linear-gradient(90deg, transparent, #c9a84c, transparent); margin: 16px auto; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f2744; }
         ::-webkit-scrollbar-thumb { background: #c9a84c; border-radius: 3px; }
       `}</style>
+
+      {/* Subtle paper-grain overlay for a certificate-like texture */}
+      <svg style={{ position: "fixed", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0, opacity: 0.035 }}>
+        <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter>
+        <rect width="100%" height="100%" filter="url(#grain)" style={{ animation: "grainDrift 1.2s steps(2) infinite" }}/>
+      </svg>
 
       {/* ══ STICKY NAVBAR ══════════════════════════════════════════════════════ */}
       <nav style={{
@@ -302,14 +246,8 @@ const LandingPage = () => {
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 36, height: 36 }}>
-            <svg viewBox="0 0 40 40" width="36" height="36">
-              <rect width="40" height="40" rx="8" fill={GOLD} opacity="0.15"/>
-              <line x1="20" y1="6" x2="20" y2="34" stroke={GOLD} strokeWidth="2"/>
-              <line x1="8" y1="14" x2="32" y2="14" stroke={GOLD} strokeWidth="2"/>
-              <path d="M8,16 Q14,21 20,16" fill="none" stroke={GOLD} strokeWidth="1.5"/>
-              <path d="M20,16 Q26,21 32,16" fill="none" stroke={GOLD} strokeWidth="1.5"/>
-            </svg>
+          <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: "#fdfcf9", border: `1px solid rgba(201,168,76,0.5)`, flexShrink: 0 }}>
+            <img src="/brand/vakil-seal-emblem.png" alt="VakilSummons seal" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }}/>
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, letterSpacing: "0.05em", fontFamily: "'Playfair Display', Georgia, serif" }}>VakilSummons</div>
@@ -332,100 +270,72 @@ const LandingPage = () => {
         justifyContent: "center", position: "relative",
         paddingTop: 64, overflow: "hidden",
       }}>
-        {/* Background radial glow */}
-        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 600, background: "radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%)", pointerEvents: "none" }}/>
-
-        {/* Rotating outer ring */}
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-55%)", width: 500, height: 500, border: "1px solid rgba(201,168,76,0.08)", borderRadius: "50%", animation: phase >= 1 ? "rotateSlow 40s linear infinite" : "none" }}/>
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-55%)", width: 380, height: 380, border: "1px dashed rgba(201,168,76,0.06)", borderRadius: "50%", animation: phase >= 1 ? "rotateSlow 25s linear infinite reverse" : "none" }}/>
+        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: 640, height: 640, background: "radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%)", pointerEvents: "none" }}/>
 
         <div style={{ textAlign: "center", position: "relative", zIndex: 1, maxWidth: 860, padding: "0 24px" }}>
 
-          {/* Logo animation */}
+          {/* Seal medallion */}
           <div style={{
-            marginBottom: 32,
+            marginBottom: 36,
             opacity: phase >= 1 ? 1 : 0,
-            transform: phase >= 1 ? "scale(1)" : "scale(0.5)",
-            transition: "opacity 0.8s ease, transform 0.8s cubic-bezier(0.34,1.56,0.64,1)",
-            animation: phase >= 1 ? "float 4s ease-in-out infinite 2s" : "none",
-            display: "inline-block",
+            transform: phase >= 1 ? "scale(1)" : "scale(0.6)",
+            transition: "opacity 0.7s ease, transform 0.7s cubic-bezier(0.34,1.56,0.64,1)",
           }}>
-            <JusticeSVG animated={phase >= 3} />
+            <SealMedallion phase={phase} />
           </div>
 
           {/* Typewriter title */}
           <div style={{
             fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: "clamp(42px, 6vw, 72px)",
-            fontWeight: 800,
-            letterSpacing: "0.12em",
-            color: WHITE,
-            minHeight: "1.2em",
-            marginBottom: 16,
+            fontSize: "clamp(38px, 5.6vw, 68px)",
+            fontWeight: 800, letterSpacing: "0.12em", color: WHITE,
+            minHeight: "1.2em", marginBottom: 14,
           }}>
             {typed}
             {phase === 2 && <span style={{ animation: "pulse 0.8s infinite", borderRight: `3px solid ${GOLD}`, marginLeft: 2 }}>&nbsp;</span>}
           </div>
 
-          {/* Gold divider */}
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 20,
-            opacity: phase >= 3 ? 1 : 0,
-            transition: "opacity 0.6s ease 0.2s",
+            opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.6s ease 0.2s",
           }}>
             <div style={{ width: 80, height: 1, background: `linear-gradient(90deg, transparent, ${GOLD})` }}/>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: GOLD }}/>
             <div style={{ width: 80, height: 1, background: `linear-gradient(90deg, ${GOLD}, transparent)` }}/>
           </div>
 
-          {/* Tagline */}
           <p style={{
-            fontSize: "clamp(13px, 1.5vw, 16px)",
-            letterSpacing: "0.25em",
-            textTransform: "uppercase",
-            color: GOLD,
-            marginBottom: 12,
-            fontWeight: 500,
-            opacity: phase >= 3 ? 1 : 0,
-            transition: "opacity 0.6s ease 0.4s",
+            fontSize: "clamp(13px, 1.5vw, 16px)", letterSpacing: "0.25em", textTransform: "uppercase",
+            color: GOLD, marginBottom: 12, fontWeight: 500,
+            opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.6s ease 0.4s",
           }}>
             Your Rights. Our Duty. Justice Delivered.
           </p>
 
           <p style={{
-            fontSize: 17,
-            color: "rgba(255,255,255,0.55)",
-            lineHeight: 1.8,
-            marginBottom: 44,
-            maxWidth: 560,
+            fontSize: 17, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, maxWidth: 560,
             margin: "0 auto 44px",
-            opacity: phase >= 3 ? 1 : 0,
-            transition: "opacity 0.6s ease 0.6s",
+            opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.6s ease 0.6s",
           }}>
-            India's first intelligent court hearing reminder system — built for advocates who refuse to let clients miss their day in court.
+            India's dedicated court hearing management platform — built for advocates who refuse to let a client miss their day in court.
           </p>
 
-          {/* CTA buttons */}
           <div style={{
             display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap",
             opacity: phase >= 3 ? 1 : 0,
             transform: phase >= 3 ? "translateY(0)" : "translateY(20px)",
             transition: "opacity 0.6s ease 0.8s, transform 0.6s ease 0.8s",
           }}>
-            <button className="btn-gold" onClick={() => navigate("/login")}>
-              Enter Portal →
-            </button>
+            <button className="btn-gold" onClick={() => navigate("/login")}>Enter Portal →</button>
             <button className="btn-outline" onClick={() => document.getElementById("about").scrollIntoView({ behavior: "smooth" })}>
               Learn More ↓
             </button>
           </div>
 
-          {/* Scroll indicator */}
           <div style={{
-            marginTop: 64,
-            opacity: phase >= 3 ? 0.5 : 0,
-            transition: "opacity 0.6s ease 1.2s",
-            animation: phase >= 3 ? "float 2s ease-in-out infinite" : "none",
+            marginTop: 60,
+            opacity: phase >= 3 ? 0.5 : 0, transition: "opacity 0.6s ease 1.2s",
+            animation: phase >= 3 ? "float 2.4s ease-in-out infinite" : "none",
           }}>
             <div style={{ fontSize: 12, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>Scroll</div>
             <div style={{ width: 1, height: 40, background: `linear-gradient(180deg, ${GOLD}, transparent)`, margin: "0 auto" }}/>
@@ -433,23 +343,23 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ══ STATS BAR ══════════════════════════════════════════════════════════ */}
+      {/* ══ STATS BAR — real product facts, not adoption claims ══════════════════ */}
       <section style={{ background: "rgba(201,168,76,0.06)", borderTop: "1px solid rgba(201,168,76,0.15)", borderBottom: "1px solid rgba(201,168,76,0.15)", padding: "0 40px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)", divideX: "1px solid rgba(201,168,76,0.15)" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
           {[
-            { num: 500, label: "Cases Managed", suffix: "+" },
-            { num: 50,  label: "Advocates",     suffix: "+"  },
-            { num: 98,  label: "Reminder Rate",  suffix: "%"  },
-            { num: 3,   label: "Languages",      suffix: ""   },
-          ].map((s, i) => (
+            { num: 5,   label: "Court Types Supported",       suffix: "+" },
+            { num: 3,   label: "Reminder Languages",           suffix: ""  },
+            { num: 2,   label: "Daily Reminder Touchpoints",   suffix: ""  },
+            { num: 100, label: "OTP-Verified Logins",          suffix: "%" },
+          ].map((st, i) => (
             <div key={i} style={{ borderRight: i < 3 ? "1px solid rgba(201,168,76,0.12)" : "none" }}>
-              <StatBox {...s}/>
+              <StatBox {...st}/>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ══ ABOUT ═══════════════════════════════════════════════════════════════ */}
+      {/* ══ ABOUT — what VakilSummons actually is ═════════════════════════════ */}
       <section id="about" style={{ padding: "100px 60px", maxWidth: 1100, margin: "0 auto" }}>
         <div ref={aboutRef} style={{
           display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center",
@@ -459,17 +369,21 @@ const LandingPage = () => {
         }}>
           {/* Left */}
           <div>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: GOLD, marginBottom: 12 }}>Who We Are</p>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: GOLD, marginBottom: 12 }}>What Is VakilSummons</p>
             <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(28px,3vw,42px)", fontWeight: 700, lineHeight: 1.2, margin: "0 0 8px", color: WHITE }}>
               Built for the<br/>
               <span style={{ color: GOLD }}>Indian Courtroom</span>
             </h2>
             <div className="gold-divider" style={{ margin: "16px 0" }}/>
+
             <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, marginBottom: 20 }}>
-              VakilSummons is India's dedicated court hearing management platform — designed from the ground up for advocates practising in Indian courts, from District Forums to High Courts.
+              A missed hearing isn't a small mistake — it can mean an ex-parte order, a lost opportunity to be heard, or a client who loses faith in their counsel. Court dates get lost between diaries, phone calls and memory, especially when a practice is juggling dozens of matters across different forums.
+            </p>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, marginBottom: 20 }}>
+              VakilSummons is a case management platform built specifically for advocates practising in Indian courts — from District Forums and Consumer Commissions to High Courts and Labour Courts. Every case is filed with proper party structure, every hearing is logged in a running diary, and every client is reminded automatically by WhatsApp and email — in Telugu, Hindi or English — the night before and the morning of.
             </p>
             <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, marginBottom: 32 }}>
-              We understand that a missed hearing can cost a client their case. Our automated reminder system sends WhatsApp messages in Telugu, Hindi and English — directly from your number — so every client knows exactly when to appear.
+              It isn't a generic task tracker repurposed for law — it speaks the language of a cause list: appellant and respondent, forum and stage, hearing outcome and next date.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {["Consumer Forum","High Court","District Court","Labour Court","Family Court"].map(c => (
@@ -481,7 +395,6 @@ const LandingPage = () => {
           {/* Right — visual */}
           <div style={{ position: "relative" }}>
             <div style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, padding: 32, position: "relative" }}>
-              {/* Quote */}
               <div style={{ fontSize: 64, color: GOLD, opacity: 0.2, fontFamily: "Georgia", lineHeight: 1, marginBottom: -20 }}>"</div>
               <p style={{ fontSize: 20, fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", color: "rgba(255,255,255,0.8)", lineHeight: 1.6, marginBottom: 24 }}>
                 Justice delayed is justice denied. We make sure your clients are never the reason for delay.
@@ -491,7 +404,6 @@ const LandingPage = () => {
                 <span style={{ fontSize: 13, color: GOLD, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>VakilSummons</span>
               </div>
 
-              {/* WhatsApp preview card */}
               <div style={{ marginTop: 28, background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: "14px 16px", borderLeft: `3px solid #25D366` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: 16 }}>💬</span>
@@ -505,8 +417,6 @@ const LandingPage = () => {
                 </p>
               </div>
             </div>
-
-            {/* Decorative corner */}
             <div style={{ position: "absolute", top: -20, right: -20, width: 60, height: 60, border: `2px solid rgba(201,168,76,0.3)`, borderRadius: 12, transform: "rotate(15deg)" }}/>
           </div>
         </div>
@@ -544,10 +454,10 @@ const LandingPage = () => {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))", gap: 40 }}>
           {[
-            { n: "01", title: "Register & Verify", desc: "Create your lawyer account with email OTP verification. Secure from day one." },
-            { n: "02", title: "Add Cases & Clients", desc: "File cases with full party details — appellant, respondent, court, hearing date." },
-            { n: "03", title: "Record Each Hearing", desc: "After every hearing, record the outcome and set the next date in the diary." },
-            { n: "04", title: "Reminders Go Automatically", desc: "Clients receive WhatsApp and email reminders — 8 PM before and 7 AM on the day." },
+            { n: "I",   title: "Register & Verify",          desc: "Create your lawyer account with email OTP verification. Secure from day one." },
+            { n: "II",  title: "Add Cases & Clients",         desc: "File cases with full party details — appellant, respondent, court, hearing date." },
+            { n: "III", title: "Record Each Hearing",         desc: "After every hearing, record the outcome and set the next date in the diary." },
+            { n: "IV",  title: "Reminders Go Automatically",  desc: "Clients receive WhatsApp and email reminders — 8 PM before and 7 AM on the day." },
           ].map(({ n, title, desc }, i) => {
             const [ref, vis] = useReveal();
             return (
@@ -557,7 +467,6 @@ const LandingPage = () => {
                 </div>
                 <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 17, fontWeight: 600, color: WHITE, margin: "0 0 10px" }}>{title}</h3>
                 <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.5)", lineHeight: 1.7, margin: 0 }}>{desc}</p>
-                {i < 3 && <div style={{ position: "absolute", display: "none" }}/>}
               </div>
             );
           })}
@@ -573,7 +482,7 @@ const LandingPage = () => {
             Ready to manage your practice better?
           </h2>
           <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginBottom: 36, lineHeight: 1.7 }}>
-            Join advocates across Andhra Pradesh who trust VakilSummons to keep their clients informed and their cases organised.
+            Built for advocates who refuse to let a hearing slip through the cracks — set up your first case in minutes.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center" }}>
             <button className="btn-gold" onClick={() => navigate("/login")}>Sign In to Portal →</button>

@@ -292,7 +292,7 @@ const CalendarPage = () => {
 
           {/* Action buttons */}
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            <button onClick={() => navigate("/cases", { state: { selectedDate } })}
+            <button onClick={() => navigate("/dashboard/cases", { state: { selectedDate } })}
               style={{ padding:"10px 14px", borderRadius:10, border:"none", background:"#c9a84c", color:"#0f1f3d", fontWeight:700, fontSize:13.5, cursor:"pointer", textAlign:"left" }}>
               ➕ Create Case
             </button>
