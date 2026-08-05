@@ -169,10 +169,10 @@ const PortalHero = ({ navigate }) => {
         <div style={{ position: "absolute", top: 76, left: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
           VakilSummons<span style={{ color: AMBER }}>.</span> Est. 2026
         </div>
-        <div style={{ position: "absolute", top: 76, right: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
+        <div className="corner-meta-secondary" style={{ position: "absolute", top: 76, right: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
           Court System — India
         </div>
-        <div style={{ position: "absolute", bottom: 28, left: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
+        <div className="corner-meta-secondary" style={{ position: "absolute", bottom: 28, left: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
           File No. VS/2026
         </div>
         <div style={{ position: "absolute", bottom: 28, right: 28, zIndex: 4, display: "flex", gap: 10 }}>
@@ -384,7 +384,7 @@ const FloatingSeal = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, [reduced]);
   return (
-    <div ref={ref} style={{
+    <div ref={ref} className="floating-detail" style={{
       position: "absolute", right: "-6%", top: "50%",
       width: "clamp(220px,26vw,380px)", aspectRatio: "1/1",
       transform: `translateY(${-50 + lerp(6, -6, t)}%) rotate(${lerp(-8, 8, t)}deg)`,
@@ -408,7 +408,7 @@ const ReminderPreview = () => {
   return (
     <section style={{ padding: "min(12vw,120px) clamp(20px,4vw,48px)", maxWidth: 1180, margin: "0 auto" }}>
       <div ref={ref} style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(32px,6vw,80px)", alignItems: "center",
+        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "clamp(32px,6vw,80px)", alignItems: "center",
         opacity: visible ? 1 : 0, transform: visible ? "none" : "translateY(20px)",
         transition: "opacity 0.7s ease, transform 0.7s ease",
       }}>
@@ -487,6 +487,11 @@ const LandingPage = () => {
         a { color: inherit; }
         .nav-link { font-family: ${SANS}; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; color: ${INK2}; transition: color 0.15s; }
         .nav-link:hover { color: ${AMBER}; }
+        @media (max-width: 640px) {
+          .nav-link { display: none; }
+          .corner-meta-secondary { display: none; }
+          .floating-detail { display: none; }
+        }
         ::selection { background: ${AMBER}; color: ${GROUND}; }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
@@ -529,7 +534,7 @@ const LandingPage = () => {
         }}>
           <span style={{
             position: "absolute", top: -60, left: -20, fontFamily: DISPLAY, fontWeight: 800,
-            fontSize: "clamp(160px,20vw,300px)", lineHeight: 1, color: "transparent",
+            fontSize: "clamp(90px,20vw,300px)", lineHeight: 1, color: "transparent",
             WebkitTextStroke: `1px ${HAIRLINE}`, zIndex: -1, userSelect: "none",
           }}>01</span>
           <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, marginBottom: 20 }}>
@@ -545,7 +550,7 @@ const LandingPage = () => {
       {/* ── RELEASES → PRACTICE AREAS ── */}
       <section id="releases" style={{ padding: "min(12vw,120px) clamp(20px,4vw,48px)", maxWidth: 1180, margin: "0 auto" }}>
         <div ref={releasesRef} style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(40px,6vw,90px)", alignItems: "center",
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "clamp(40px,6vw,90px)", alignItems: "center",
           opacity: releasesVisible ? 1 : 0, transform: releasesVisible ? "none" : "translateY(20px)",
           transition: "opacity 0.7s ease, transform 0.7s ease",
         }}>
