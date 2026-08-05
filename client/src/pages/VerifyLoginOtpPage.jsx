@@ -22,7 +22,7 @@ const VerifyLoginOtpPage = () => {
     try {
       const res = await verifyLoginOtp({ email, otp });
       // Redirect to / (dashboard root) for lawyers, /admin for admins
-      navigate(res.role === "admin" ? "/admin" : "/");
+      navigate(res.role === "admin" ? "/admin" : "/dashboard");
     } catch (err) {
       alert(err.response?.data?.message || "OTP verification failed");
     } finally { setLoading(false); }
