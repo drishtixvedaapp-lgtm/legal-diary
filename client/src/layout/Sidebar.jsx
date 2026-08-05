@@ -10,19 +10,19 @@ const Sidebar = () => {
   const navigate  = useNavigate();
 
   const menuItems = [
-    { name: "Dashboard",     path: "/",               icon: LayoutDashboard },
-    ...(isLawyer() || isAdmin() ? [
-      { name: "Clients",     path: "/clients",        icon: Users           },
-      { name: "Cases",       path: "/cases",          icon: Briefcase       },
-      { name: "Calendar",    path: "/calendar",       icon: CalendarDays    },
-      { name: "History",     path: "/history",        icon: Archive         },
-    ] : []),
-    { name: "Notifications", path: "/notifications",  icon: Bell            },
-    { name: "My Profile",    path: "/profile",        icon: UserCircle      },
-    ...(isAdmin() ? [
-      { name: "Admin Panel", path: "/admin",          icon: Scale           },
-    ] : []),
-  ];
+  { name: "Dashboard",     path: "/dashboard",               icon: LayoutDashboard },
+  ...(isLawyer() || isAdmin() ? [
+    { name: "Clients",     path: "/dashboard/clients",       icon: Users           },
+    { name: "Cases",       path: "/dashboard/cases",         icon: Briefcase       },
+    { name: "Calendar",    path: "/dashboard/calendar",      icon: CalendarDays    },
+    { name: "History",     path: "/dashboard/history",       icon: Archive         },
+  ] : []),
+  { name: "Notifications", path: "/dashboard/notifications", icon: Bell            },
+  { name: "My Profile",    path: "/dashboard/profile",       icon: UserCircle      },
+  ...(isAdmin() ? [
+    { name: "Admin Panel", path: "/admin",                   icon: Scale           },
+  ] : []),
+];
 
   const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
 
@@ -59,7 +59,7 @@ const Sidebar = () => {
       <nav style={{ flex: 1, padding: "0 10px", display: "flex", flexDirection: "column", gap: 2 }}>
         {menuItems.map((item) => {
           const active = location.pathname === item.path ||
-                         (item.path !== "/" && location.pathname.startsWith(item.path));
+               (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
           const Icon = item.icon;
           return (
             <Link key={item.path} to={item.path} style={{ textDecoration: "none" }}>
