@@ -398,6 +398,78 @@ const FloatingSeal = () => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
+   WHAT YOUR CLIENT RECEIVES — real reminder content, styled as
+   actual message previews (not screenshots — built from the same
+   copy your backend actually sends, guaranteed to match).
+═══════════════════════════════════════════════════════════════ */
+const ReminderPreview = () => {
+  const [ref, visible] = useReveal();
+
+  return (
+    <section style={{ padding: "min(12vw,120px) clamp(20px,4vw,48px)", maxWidth: 1180, margin: "0 auto" }}>
+      <div ref={ref} style={{
+        display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(32px,6vw,80px)", alignItems: "center",
+        opacity: visible ? 1 : 0, transform: visible ? "none" : "translateY(20px)",
+        transition: "opacity 0.7s ease, transform 0.7s ease",
+      }}>
+        {/* Court photo side */}
+        <div style={{ position: "relative", aspectRatio: "4 / 5", overflow: "hidden", border: `1px solid ${HAIRLINE}` }}>
+          <img
+            src="/brand/photos/courthouse.jpg"
+            alt="Indian courthouse exterior"
+            style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.85)" }}
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(0deg, rgba(10,12,14,0.7) 0%, transparent 45%)` }} />
+          <div style={{ position: "absolute", left: 24, bottom: 24, right: 24 }}>
+            <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2, marginBottom: 8 }}>
+              Never miss a date
+            </p>
+            <h3 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(22px,2.4vw,30px)", color: INK, margin: 0, letterSpacing: "-0.01em" }}>
+              What your client <span style={{ color: AMBER }}>actually receives.</span>
+            </h3>
+          </div>
+        </div>
+
+        {/* Message previews side */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* WhatsApp-style bubble */}
+          <div style={{ background: GROUND2, border: `1px solid ${HAIRLINE}`, padding: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#25D366" }} />
+              <span style={{ fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: MUTED }}>WhatsApp Reminder</span>
+            </div>
+            <div style={{ background: "#DCF8C6", color: "#1a1a1a", borderRadius: "2px 10px 10px 10px", padding: "12px 14px", maxWidth: 320, fontFamily: SANS, fontSize: 13, lineHeight: 1.7 }}>
+              ⚖️ <strong>Hearing Tomorrow</strong><br/>
+              📋 Business Rivalry Case | FA/494/2026<br/>
+              🏛️ A.P. State Consumer Commission<br/>
+              📅 Wednesday, 29 July 2026
+              <div style={{ textAlign: "right", fontSize: 10.5, color: "#5b8a52", marginTop: 6 }}>8:00 PM ✓✓</div>
+            </div>
+          </div>
+
+          {/* Email-style card */}
+          <div style={{ background: GROUND2, border: `1px solid ${HAIRLINE}`, padding: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: TEAL }} />
+              <span style={{ fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: MUTED }}>Email Reminder</span>
+            </div>
+            <div style={{ background: "#FAF9F6", borderRadius: 4, padding: "16px 18px", fontFamily: SANS }}>
+              <p style={{ margin: "0 0 6px", fontSize: 10.5, color: "#767e8c" }}>From: VakilSummons &lt;reminders@vakilsummons.com&gt;</p>
+              <p style={{ margin: "0 0 10px", fontSize: 14, fontWeight: 700, color: "#141c2b" }}>⚖️ Hearing Tomorrow — Business Rivalry Case</p>
+              <p style={{ margin: 0, fontSize: 12.5, color: "#4a5364", lineHeight: 1.7 }}>
+                Case FA/494/2026 is listed before the A.P. State Consumer Commission
+                on Wednesday, 29 July 2026. This is an automated reminder from VakilSummons.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════
    MAIN
 ═══════════════════════════════════════════════════════════════ */
 const LandingPage = () => {
@@ -528,6 +600,7 @@ const LandingPage = () => {
               {[
                 ["Evening Reminder", "8:00 PM (day before)", "WhatsApp + Email", "EN / HI / TE"],
                 ["Morning Reminder", "7:00 AM (day of)",      "WhatsApp + Email", "EN / HI / TE"],
+                ["Login OTP",        "Immediate — 10 min expiry", "Email",       "EN"],
               ].map((row, i) => (
                 <tr key={i}>
                   <td style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: INK, padding: "16px 0", borderBottom: `1px solid ${HAIRLINE}` }}>{row[0]}</td>
@@ -540,6 +613,9 @@ const LandingPage = () => {
           </table>
         </div>
       </section>
+
+      {/* ── WHAT YOUR CLIENT RECEIVES ── */}
+      <ReminderPreview />
 
       {/* ── CLOSE ── */}
       <section id="close" style={{ background: GROUND2, paddingTop: "min(10vw,100px)" }}>
