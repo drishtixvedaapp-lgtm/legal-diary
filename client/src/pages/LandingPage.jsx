@@ -1,42 +1,30 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-/* ── Design tokens ── */
-const NAVY   = "#0f2744";
-const NAVY2  = "#162f52";
-const GOLD   = "#c9a84c";
-const GOLD2  = "#e8c96a";
-const CREAM  = "#faf8f3";
-const WHITE  = "#ffffff";
+/* ═══════════════════════════════════════════════════════════════
+   TOKENS — dark label system. Amber and teal are type/dot/rule only.
+═══════════════════════════════════════════════════════════════ */
+const GROUND   = "#0A0C0E";
+const GROUND2  = "#101317";
+const INK      = "#EDE7DC";
+const INK2     = "#9EA5A8";
+const MUTED    = "#6C7378";
+const AMBER    = "#E8913C";
+const TEAL     = "#2E6B72";
+const HAIRLINE = "rgba(237,231,220,.13)";
 
-/* ── Animated counter ── */
-const Counter = ({ to, duration = 1400 }) => {
-  const [val, setVal] = useState(0);
-  const ref = useRef(null);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) return;
-      obs.disconnect();
-      let start = null;
-      const step = (ts) => {
-        if (!start) start = ts;
-        const p = Math.min((ts - start) / duration, 1);
-        setVal(Math.floor(p * to));
-        if (p < 1) requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [to, duration]);
-  return <span ref={ref}>{val}</span>;
-};
+const DISPLAY = "'Syne', sans-serif";
+const SANS    = "'Sora', sans-serif";
 
-/* ── Scroll reveal hook ── */
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const useReveal = () => {
   const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(prefersReducedMotion());
   useEffect(() => {
+    if (prefersReducedMotion()) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
     }, { threshold: 0.15 });
@@ -46,465 +34,543 @@ const useReveal = () => {
   return [ref, visible];
 };
 
-/* ── Seal medallion — the real VakilSummons emblem, animated as the hero's
-     signature moment. The source artwork sits on a near-white plate, so it's
-     mounted like a physical medallion/certificate rather than faked into
-     transparency — that's a deliberate framing, not a workaround. ── */
-const SealMedallion = ({ phase }) => (
-  <div style={{ position: "relative", display: "inline-block" }}>
-    {/* Outer slow-rotating ring */}
-    <div style={{
-      position: "absolute", top: "50%", left: "50%",
-      width: "128%", height: "128%", transform: "translate(-50%,-50%)",
-      border: `1px solid rgba(201,168,76,0.28)`, borderRadius: "50%",
-      animation: phase >= 1 ? "rotateSlow 46s linear infinite" : "none",
-    }}/>
-    {/* Inner counter-rotating dashed ring */}
-    <div style={{
-      position: "absolute", top: "50%", left: "50%",
-      width: "116%", height: "116%", transform: "translate(-50%,-50%)",
-      border: `1px dashed rgba(201,168,76,0.18)`, borderRadius: "50%",
-      animation: phase >= 1 ? "rotateSlow 30s linear infinite reverse" : "none",
-    }}/>
-    {/* Stamp-impact flash ring — fires once as the seal settles */}
-    <div style={{
-      position: "absolute", top: "50%", left: "50%",
-      width: "100%", height: "100%", transform: "translate(-50%,-50%) scale(0.85)",
-      border: `2px solid ${GOLD}`, borderRadius: "50%",
-      opacity: 0,
-      animation: phase >= 1 ? "sealFlash 1s ease-out 0.55s" : "none",
-    }}/>
-    {/* Ambient glow */}
-    <div style={{
-      position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-      width: "150%", height: "150%",
-      background: "radial-gradient(circle, rgba(201,168,76,0.16) 0%, transparent 68%)",
-      pointerEvents: "none",
-    }}/>
-    {/* The medallion plate */}
-    <div style={{
-      position: "relative",
-      width: "clamp(200px, 26vw, 300px)",
-      aspectRatio: "800 / 564",
-      background: "linear-gradient(160deg, #fdfcf9, #f3efe4)",
-      borderRadius: 24,
-      border: `1.5px solid rgba(201,168,76,0.55)`,
-      boxShadow: "0 20px 60px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.5) inset, 0 0 0 6px rgba(15,39,68,0.35)",
-      padding: "6%",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      animation: phase >= 1 ? "float 5s ease-in-out infinite 1.6s" : "none",
-    }}>
-      <img
-        src="/brand/vakil-seal-emblem.png"
-        alt="VakilSummons — Lady Justice seal with the Ashoka emblem and Parliament dome"
-        style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
-        draggable={false}
-      />
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp01 = (t) => Math.min(Math.max(t, 0), 1);
+
+/* ═══════════════════════════════════════════════════════════════
+   PORTAL HERO — sticky stage, two panels part outward, the seal
+   settles from overscale, a duotone rises, two dots travel to the
+   corners, and the wordmark grows + tightens + splits — all bound
+   to scroll position within the hero's own scroll range.
+═══════════════════════════════════════════════════════════════ */
+const HERO_VH = 2.4;
+
+const PortalHero = ({ navigate }) => {
+  const reduced = prefersReducedMotion();
+  const heroRef = useRef(null);
+  const leftSpanRef = useRef(null);
+  const rightSpanRef = useRef(null);
+  const [progress, setProgress] = useState(0);
+  const [halfWidths, setHalfWidths] = useState({ l: 0, r: 0 });
+
+  useEffect(() => {
+    const measure = () => {
+      setHalfWidths({
+        l: leftSpanRef.current ? leftSpanRef.current.getBoundingClientRect().width / 2 : 0,
+        r: rightSpanRef.current ? rightSpanRef.current.getBoundingClientRect().width / 2 : 0,
+      });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  useEffect(() => {
+    if (reduced) { setProgress(1); return; }
+    let raf = null;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        const vh = window.innerHeight;
+        const range = vh * HERO_VH - vh;
+        setProgress(clamp01(window.scrollY / Math.max(range, 1)));
+        raf = null;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [reduced]);
+
+  const p = progress;
+  const panelShift = lerp(0, 100, p);       // % — travels past its own edge
+  const imgScale = lerp(1.16, 1, p);
+  const duotoneOp = lerp(0, 0.32, p);
+  const dotTravel = lerp(0, 1, p);
+  const wordScale = lerp(1, 1.9, p);
+  const wordTrack = lerp(-0.01, -0.055, p); // em — tightens
+  const leftShift = -halfWidths.l * p;
+  const rightShift = halfWidths.r * p;
+
+  return (
+    <section ref={heroRef} style={{ height: `${HERO_VH * 100}vh`, position: "relative" }}>
+      <div style={{
+        position: "sticky", top: 0, height: "100vh", overflow: "hidden",
+        isolation: "isolate",
+      }}>
+        {/* Full-bleed image, overscaled settling to 1 */}
+        <img
+          src="/brand/photos/hero-gavel.jpg"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          style={{
+            position: "absolute", inset: 0, width: "100%", height: "100%",
+            objectFit: "cover", objectPosition: "center 45%",
+            transform: `scale(${imgScale})`, filter: "brightness(0.92)",
+          }}
+        />
+        {/* Duotone wash pulled from the two accents */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: `linear-gradient(135deg, ${AMBER}, ${TEAL})`,
+          mixBlendMode: "overlay", opacity: duotoneOp,
+        }} />
+        {/* Radial veil */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "radial-gradient(ellipse at center, transparent 35%, rgba(10,12,14,0.85) 100%)",
+        }} />
+
+        {/* Two accent dots travelling to opposite corners */}
+        <div style={{
+          position: "absolute", top: `${50 - dotTravel * 38}%`, left: `${50 - dotTravel * 40}%`,
+          width: 8, height: 8, borderRadius: "50%", background: AMBER,
+          transform: "translate(-50%,-50%)", opacity: reduced ? 1 : lerp(0.3, 1, dotTravel),
+        }} />
+        <div style={{
+          position: "absolute", top: `${50 + dotTravel * 38}%`, left: `${50 + dotTravel * 40}%`,
+          width: 8, height: 8, borderRadius: "50%", background: TEAL,
+          transform: "translate(-50%,-50%)", opacity: reduced ? 1 : lerp(0.3, 1, dotTravel),
+        }} />
+
+        {/* Split, growing, tightening wordmark */}
+        <div style={{
+          position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+          display: "flex", alignItems: "baseline", zIndex: 3, pointerEvents: "none",
+        }}>
+          <span ref={leftSpanRef} style={{
+            fontFamily: DISPLAY, fontWeight: 800, color: INK,
+            fontSize: "clamp(34px,7vw,96px)",
+            transform: `scale(${wordScale}) translateX(${leftShift}px)`,
+            letterSpacing: `${wordTrack}em`, display: "inline-block",
+          }}>VAKIL</span>
+          <span ref={rightSpanRef} style={{
+            fontFamily: DISPLAY, fontWeight: 800, color: INK,
+            fontSize: "clamp(34px,7vw,96px)",
+            transform: `scale(${wordScale}) translateX(${rightShift}px)`,
+            letterSpacing: `${wordTrack}em`, display: "inline-block",
+          }}>SUMMONS</span>
+        </div>
+
+        {/* Two panels, closed at start, parting outward */}
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, left: 0, width: "52%",
+          background: GROUND, zIndex: 2,
+          transform: `translateX(${-panelShift}%)`,
+        }} />
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, right: 0, width: "52%",
+          background: GROUND, zIndex: 2,
+          transform: `translateX(${panelShift}%)`,
+        }} />
+
+        {/* Corner metadata */}
+        <div style={{ position: "absolute", top: 76, left: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
+          VakilSummons<span style={{ color: AMBER }}>.</span> Est. 2026
+        </div>
+        <div style={{ position: "absolute", top: 76, right: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
+          Court System — India
+        </div>
+        <div style={{ position: "absolute", bottom: 28, left: 28, zIndex: 4, fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: INK2 }}>
+          File No. VS/2026
+        </div>
+        <div style={{ position: "absolute", bottom: 28, right: 28, zIndex: 4, display: "flex", gap: 10 }}>
+          <button
+            onClick={() => navigate("/login")}
+            style={{
+              fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.12em", textTransform: "uppercase",
+              padding: "10px 22px", borderRadius: 999, border: `1px solid ${INK}`,
+              background: "transparent", color: INK, cursor: "pointer",
+            }}
+          >Sign In</button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/* ── Hint text below the deck ── */
+const CASE_DECK = [
+  { key: "Civil",      icon: "⚖️", forum: "District Court",              structure: "Plaintiff vs Defendant" },
+  { key: "Criminal",   icon: "🚔", forum: "District / Sessions Court",    structure: "Prosecution vs Accused" },
+  { key: "Family",     icon: "👨‍👩‍👧", forum: "Family Court",                 structure: "Petitioner vs Respondent" },
+  { key: "Consumer",   icon: "🛒", forum: "Consumer Commission",          structure: "Complainant vs Opposite Party" },
+  { key: "Commercial", icon: "🏢", forum: "Commercial Court / High Court", structure: "Plaintiff vs Defendant" },
+  { key: "Labour / Employment", icon: "👷", forum: "Labour Court",        structure: "Workman vs Employer" },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   THROWABLE CASE-TYPE DECK — pointer drag + keyboard, physical stack
+═══════════════════════════════════════════════════════════════ */
+const CardDeck = () => {
+  const [order, setOrder] = useState(CASE_DECK.map((_, i) => i));
+  const topRef = useRef(null);
+  const dragState = useRef({ dragging: false, startX: 0, dx: 0 });
+  const deckRef = useRef(null);
+
+  const throwCard = (dir) => {
+    const el = topRef.current;
+    if (!el) return;
+    const w = deckRef.current?.offsetWidth || 320;
+    el.style.transition = "transform 0.38s cubic-bezier(0.22,1,0.36,1), opacity 0.38s ease";
+    el.style.transform = `translate(${dir * (w + 80)}px, -30px) rotate(${dir * 22}deg)`;
+    el.style.opacity = "0";
+    setTimeout(() => {
+      setOrder(prev => [...prev.slice(1), prev[0]]);
+      if (topRef.current) {
+        topRef.current.style.transition = "none";
+        topRef.current.style.transform = "translate(0,0) rotate(0deg)";
+        topRef.current.style.opacity = "1";
+      }
+    }, 380);
+  };
+
+  const snapBack = () => {
+    const el = topRef.current;
+    if (!el) return;
+    el.style.transition = "transform 0.28s cubic-bezier(0.22,1,0.36,1)";
+    el.style.transform = "translate(0,0) rotate(0deg)";
+  };
+
+  const onPointerDown = (e) => {
+    dragState.current = { dragging: true, startX: e.clientX, dx: 0 };
+    topRef.current?.setPointerCapture?.(e.pointerId);
+    if (topRef.current) topRef.current.style.transition = "none";
+  };
+  const onPointerMove = (e) => {
+    if (!dragState.current.dragging || !topRef.current) return;
+    const dx = e.clientX - dragState.current.startX;
+    dragState.current.dx = dx;
+    topRef.current.style.transform = `translateX(${dx}px) rotate(${dx / 18}deg) scale(1.02)`;
+  };
+  const onPointerUp = () => {
+    if (!dragState.current.dragging) return;
+    dragState.current.dragging = false;
+    const w = deckRef.current?.offsetWidth || 320;
+    if (Math.abs(dragState.current.dx) > w * 0.1) {
+      throwCard(dragState.current.dx > 0 ? 1 : -1);
+    } else {
+      snapBack();
+    }
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "ArrowRight") { e.preventDefault(); throwCard(1); }
+    if (e.key === "ArrowLeft")  { e.preventDefault(); throwCard(-1); }
+  };
+
+  const visible = order.slice(0, 4);
+
+  return (
+    <div>
+      <div
+        ref={deckRef}
+        tabIndex={0}
+        role="group"
+        aria-label="Practice areas — drag or use arrow keys to browse"
+        onKeyDown={onKeyDown}
+        style={{
+          position: "relative", width: "100%", maxWidth: 340, aspectRatio: "1 / 1",
+          margin: "0 auto", touchAction: "pan-y", outline: "none",
+        }}
+      >
+        {visible.slice().reverse().map((idx, stackPos) => {
+          const depth = visible.length - 1 - stackPos; // 0 = top
+          const card = CASE_DECK[idx];
+          const isTop = depth === 0;
+          return (
+            <div
+              key={idx}
+              ref={isTop ? topRef : null}
+              onPointerDown={isTop ? onPointerDown : undefined}
+              onPointerMove={isTop ? onPointerMove : undefined}
+              onPointerUp={isTop ? onPointerUp : undefined}
+              style={{
+                position: "absolute", inset: 0,
+                background: GROUND2,
+                border: `1px solid ${HAIRLINE}`,
+                borderRadius: 0,
+                padding: 28,
+                display: "flex", flexDirection: "column", justifyContent: "space-between",
+                transform: `translate(${depth * 6}px, ${depth * -6}px) rotate(${depth * (idx % 2 === 0 ? 1 : -1) * 1.6}deg) scale(${1 - depth * 0.03})`,
+                boxShadow: isTop ? "0 20px 50px rgba(0,0,0,0.5)" : "0 8px 24px rgba(0,0,0,0.3)",
+                cursor: isTop ? "grab" : "default",
+                zIndex: 10 - depth,
+                userSelect: "none",
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 30, marginBottom: 14 }}>{card.icon}</div>
+                <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 24, color: INK, letterSpacing: "-0.02em" }}>{card.key}</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: MUTED, marginBottom: 4 }}>Forum</div>
+                <div style={{ fontFamily: SANS, fontSize: 13, color: INK2, marginBottom: 12 }}>{card.forum}</div>
+                <div style={{ fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: MUTED, marginBottom: 4 }}>Party Structure</div>
+                <div style={{ fontFamily: SANS, fontSize: 13, color: INK2 }}>{card.structure}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: MUTED, textAlign: "center", marginTop: 24 }}>
+        Drag, or use ← → keys
+      </p>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
+        {CASE_DECK.map((_, i) => (
+          <span key={i} style={{
+            width: 5, height: 5, borderRadius: "50%",
+            background: order[0] === i ? AMBER : HAIRLINE,
+          }} />
+        ))}
+      </div>
     </div>
-  </div>
+  );
+};
+
+const Btn = ({ children, onClick, primary, style }) => (
+  <button
+    onClick={onClick}
+    onMouseEnter={e => { e.currentTarget.style.background = primary ? "transparent" : INK; e.currentTarget.style.color = primary ? INK : GROUND; }}
+    onMouseLeave={e => { e.currentTarget.style.background = primary ? INK : "transparent"; e.currentTarget.style.color = primary ? GROUND : INK; }}
+    style={{
+      fontFamily: SANS, fontSize: 11.5, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500,
+      padding: "14px 28px", border: `1.5px solid ${INK}`, borderRadius: 999, cursor: "pointer",
+      background: primary ? INK : "transparent", color: primary ? GROUND : INK,
+      transition: "background 0.15s, color 0.15s", ...style,
+    }}
+  >{children}</button>
 );
 
-/* ── Feature card ── */
-const FeatureCard = ({ icon, title, desc, delay }) => {
+const Row = ({ label, name, value, delay = 0 }) => {
   const [ref, visible] = useReveal();
   return (
     <div ref={ref} style={{
-      background: `rgba(255,255,255,0.04)`,
-      border: `1px solid rgba(201,168,76,0.2)`,
-      borderRadius: 16,
-      padding: "28px 24px",
-      transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
-      opacity: visible ? 1 : 0,
-      transform: visible ? "translateY(0)" : "translateY(30px)",
+      display: "flex", alignItems: "baseline", gap: 20, padding: "20px 0",
+      borderBottom: `1px solid ${HAIRLINE}`,
+      opacity: visible ? 1 : 0, transform: visible ? "none" : "translateY(14px)",
+      transition: `opacity 0.5s ease ${delay}ms, transform 0.5s ease ${delay}ms`,
     }}>
-      <div style={{ fontSize: 32, marginBottom: 14 }}>{icon}</div>
-      <h3 style={{ margin: "0 0 10px", fontSize: 18, fontWeight: 600, color: GOLD, fontFamily: "'Playfair Display', Georgia, serif" }}>{title}</h3>
-      <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.7 }}>{desc}</p>
+      <span style={{ fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.12em", textTransform: "uppercase", color: AMBER, flexShrink: 0, width: 130 }}>{label}</span>
+      <span style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 17, color: INK, flex: 1, letterSpacing: "-0.01em" }}>{name}</span>
+      <span style={{ fontFamily: SANS, fontSize: 12.5, color: INK2, whiteSpace: "nowrap" }}>{value}</span>
     </div>
   );
 };
 
-/* ── Stat box — every number here is a real, defensible product fact,
-     not an adoption metric we can't back up ── */
-const StatBox = ({ num, label, suffix = "+" }) => {
-  const [ref, visible] = useReveal();
+/* ── Floating circular seal for the statement fold ── */
+const FloatingSeal = () => {
+  const reduced = prefersReducedMotion();
+  const [t, setT] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (reduced) return;
+    let raf = null;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        if (ref.current) {
+          const rect = ref.current.getBoundingClientRect();
+          const vh = window.innerHeight;
+          setT(clamp01(1 - rect.top / vh));
+        }
+        raf = null;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [reduced]);
   return (
-    <div ref={ref} style={{ textAlign: "center", padding: "20px 0" }}>
-      <div style={{ fontSize: 44, fontWeight: 800, color: GOLD, fontFamily: "'Playfair Display', Georgia, serif", letterSpacing: "-1px" }}>
-        {visible ? <Counter to={num} /> : "0"}{suffix}
-      </div>
-      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", marginTop: 4 }}>{label}</div>
+    <div ref={ref} style={{
+      position: "absolute", right: "-6%", top: "50%",
+      width: "clamp(220px,26vw,380px)", aspectRatio: "1/1",
+      transform: `translateY(${-50 + lerp(6, -6, t)}%) rotate(${lerp(-8, 8, t)}deg)`,
+      opacity: 0.72, overflow: "hidden", borderRadius: "50%",
+      border: `1px solid ${HAIRLINE}`,
+    }}>
+      <img src="/brand/photos/detail-pen.jpg" alt="" aria-hidden="true" draggable={false}
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }} />
     </div>
   );
 };
 
-/* ════════════════════════════════════════════════════════════
-   MAIN COMPONENT
+/* ═══════════════════════════════════════════════════════════════
+   MAIN
 ═══════════════════════════════════════════════════════════════ */
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState(0); // 0=loading 1=seal 2=tagline 3=full
-  const [typed, setTyped] = useState("");
-  const fullName = "VAKIL SUMMONS";
-
-  /* Entrance animation sequence */
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 350);
-    const t2 = setTimeout(() => setPhase(2), 1250);
-    const t3 = setTimeout(() => setPhase(3), 2850);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, []);
-
-  /* Typewriter effect */
-  useEffect(() => {
-    if (phase < 2) return;
-    let i = 0;
-    setTyped("");
-    const interval = setInterval(() => {
-      if (i <= fullName.length) {
-        setTyped(fullName.slice(0, i));
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 80);
-    return () => clearInterval(interval);
-  }, [phase]);
-
-  const [aboutRef, aboutVisible] = useReveal();
+  const [statementRef, statementVisible] = useReveal();
+  const [releasesRef, releasesVisible] = useReveal();
+  const [rosterRef, rosterVisible] = useReveal();
+  const [closeRef, closeVisible] = useReveal();
 
   return (
-    <div style={{ background: NAVY, color: WHITE, fontFamily: "'Inter', sans-serif", overflowX: "hidden" }}>
-
+    <div style={{ background: GROUND, color: INK, fontFamily: SANS, position: "relative", overflowX: "clip" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
-
-        @keyframes swingL { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
-        @keyframes swingR { 0%,100% { transform: rotate(3deg); } 50% { transform: rotate(-3deg); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-        @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
-        @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        @keyframes rotateSlow { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
-        @keyframes sealFlash {
-          0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(0.85); }
-          100% { opacity: 0;   transform: translate(-50%,-50%) scale(1.55); }
-        }
-        @keyframes grainDrift { from { transform: translate(0,0); } to { transform: translate(-40px,-40px); } }
-
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Sora:wght@400;500;600&display=swap');
+        * { box-sizing: border-box; }
+        a { color: inherit; }
+        .nav-link { font-family: ${SANS}; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; color: ${INK2}; transition: color 0.15s; }
+        .nav-link:hover { color: ${AMBER}; }
+        ::selection { background: ${AMBER}; color: ${GROUND}; }
         @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+          *, *::before, *::after { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
         }
-
-        .btn-gold {
-          display: inline-flex; align-items: center; gap: 10px;
-          background: linear-gradient(135deg, #c9a84c, #e8c96a, #c9a84c);
-          background-size: 200% auto;
-          color: #0f2744; font-weight: 700; font-size: 16px;
-          padding: 15px 36px; border-radius: 50px; border: none;
-          cursor: pointer; letter-spacing: 0.05em;
-          transition: background-position 0.5s, transform 0.2s, box-shadow 0.2s;
-          font-family: 'Inter', sans-serif;
-          box-shadow: 0 4px 24px rgba(201,168,76,0.4);
-        }
-        .btn-gold:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,168,76,0.6); }
-        .btn-gold:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-        .btn-outline {
-          display: inline-flex; align-items: center; gap: 10px;
-          background: transparent; color: #fff; font-weight: 500; font-size: 15px;
-          padding: 14px 32px; border-radius: 50px;
-          border: 1.5px solid rgba(255,255,255,0.3);
-          cursor: pointer; letter-spacing: 0.03em;
-          transition: all 0.2s; font-family: 'Inter', sans-serif;
-        }
-        .btn-outline:hover { border-color: #c9a84c; color: #c9a84c; background: rgba(201,168,76,0.08); }
-        .btn-outline:focus-visible { outline: 2px solid #c9a84c; outline-offset: 3px; }
-        .nav-link {
-          color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 500;
-          text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase;
-          transition: color 0.2s; padding: 6px 0; border-bottom: 2px solid transparent;
-        }
-        .nav-link:hover { color: #c9a84c; border-bottom-color: #c9a84c; }
-        .gold-divider { width: 60px; height: 2px; background: linear-gradient(90deg, transparent, #c9a84c, transparent); margin: 16px auto; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f2744; }
-        ::-webkit-scrollbar-thumb { background: #c9a84c; border-radius: 3px; }
       `}</style>
 
-      {/* Subtle paper-grain overlay for a certificate-like texture */}
-      <svg style={{ position: "fixed", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0, opacity: 0.035 }}>
-        <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter>
-        <rect width="100%" height="100%" filter="url(#grain)" style={{ animation: "grainDrift 1.2s steps(2) infinite" }}/>
-      </svg>
-
-      {/* ══ STICKY NAVBAR ══════════════════════════════════════════════════════ */}
+      {/* ── NAV ── */}
       <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        background: "rgba(15,39,68,0.92)", backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(201,168,76,0.15)",
-        padding: "0 60px", height: 64,
+        position: "fixed", top: 0, left: 0, right: 0, height: 58, zIndex: 60,
+        background: "rgba(10,12,14,0.75)", backdropFilter: "blur(14px)",
+        borderBottom: `1px solid ${HAIRLINE}`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 clamp(20px,4vw,48px)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: "#fdfcf9", border: `1px solid rgba(201,168,76,0.5)`, flexShrink: 0 }}>
-            <img src="/brand/vakil-seal-emblem.png" alt="VakilSummons seal" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%" }}/>
-          </div>
-          <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: WHITE, letterSpacing: "0.05em", fontFamily: "'Playfair Display', Georgia, serif" }}>VakilSummons</div>
-            <div style={{ fontSize: 9, color: GOLD, letterSpacing: "0.15em", textTransform: "uppercase" }}>Court Hearing System</div>
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
-          <a href="#about" className="nav-link">About</a>
-          <a href="#features" className="nav-link">Features</a>
-          <a href="#contact" className="nav-link">Contact</a>
-          <button className="btn-gold" onClick={() => navigate("/login")} style={{ fontSize: 13, padding: "9px 24px" }}>
-            Sign In →
-          </button>
+        <span style={{ fontFamily: DISPLAY, fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          VAKILSUMMONS<span style={{ color: AMBER }}>.</span>
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
+          <a href="#statement" className="nav-link">About</a>
+          <a href="#releases" className="nav-link">Practice Areas</a>
+          <a href="#close" className="nav-link">Contact</a>
+          <Btn onClick={() => navigate("/login")} style={{ padding: "8px 20px", fontSize: 10.5 }}>Sign In</Btn>
         </div>
       </nav>
 
-      {/* ══ HERO — ANIMATED ENTRANCE ════════════════════════════════════════════ */}
-      <section style={{
-        minHeight: "100vh", display: "flex", alignItems: "center",
-        justifyContent: "center", position: "relative",
-        paddingTop: 64, overflow: "hidden",
-      }}>
-        <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: 640, height: 640, background: "radial-gradient(circle, rgba(201,168,76,0.07) 0%, transparent 70%)", pointerEvents: "none" }}/>
+      <PortalHero navigate={navigate} />
 
-        <div style={{ textAlign: "center", position: "relative", zIndex: 1, maxWidth: 860, padding: "0 24px" }}>
-
-          {/* Seal medallion */}
-          <div style={{
-            marginBottom: 36,
-            opacity: phase >= 1 ? 1 : 0,
-            transform: phase >= 1 ? "scale(1)" : "scale(0.6)",
-            transition: "opacity 0.7s ease, transform 0.7s cubic-bezier(0.34,1.56,0.64,1)",
-          }}>
-            <SealMedallion phase={phase} />
-          </div>
-
-          {/* Typewriter title */}
-          <div style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: "clamp(38px, 5.6vw, 68px)",
-            fontWeight: 800, letterSpacing: "0.12em", color: WHITE,
-            minHeight: "1.2em", marginBottom: 14,
-          }}>
-            {typed}
-            {phase === 2 && <span style={{ animation: "pulse 0.8s infinite", borderRight: `3px solid ${GOLD}`, marginLeft: 2 }}>&nbsp;</span>}
-          </div>
-
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 20,
-            opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.6s ease 0.2s",
-          }}>
-            <div style={{ width: 80, height: 1, background: `linear-gradient(90deg, transparent, ${GOLD})` }}/>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: GOLD }}/>
-            <div style={{ width: 80, height: 1, background: `linear-gradient(90deg, ${GOLD}, transparent)` }}/>
-          </div>
-
-          <p style={{
-            fontSize: "clamp(13px, 1.5vw, 16px)", letterSpacing: "0.25em", textTransform: "uppercase",
-            color: GOLD, marginBottom: 12, fontWeight: 500,
-            opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.6s ease 0.4s",
-          }}>
-            Your Rights. Our Duty. Justice Delivered.
-          </p>
-
-          <p style={{
-            fontSize: 17, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, maxWidth: 560,
-            margin: "0 auto 44px",
-            opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.6s ease 0.6s",
-          }}>
-            India's dedicated court hearing management platform — built for advocates who refuse to let a client miss their day in court.
-          </p>
-
-          <div style={{
-            display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap",
-            opacity: phase >= 3 ? 1 : 0,
-            transform: phase >= 3 ? "translateY(0)" : "translateY(20px)",
-            transition: "opacity 0.6s ease 0.8s, transform 0.6s ease 0.8s",
-          }}>
-            <button className="btn-gold" onClick={() => navigate("/login")}>Enter Portal →</button>
-            <button className="btn-outline" onClick={() => document.getElementById("about").scrollIntoView({ behavior: "smooth" })}>
-              Learn More ↓
-            </button>
-          </div>
-
-          <div style={{
-            marginTop: 60,
-            opacity: phase >= 3 ? 0.5 : 0, transition: "opacity 0.6s ease 1.2s",
-            animation: phase >= 3 ? "float 2.4s ease-in-out infinite" : "none",
-          }}>
-            <div style={{ fontSize: 12, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>Scroll</div>
-            <div style={{ width: 1, height: 40, background: `linear-gradient(180deg, ${GOLD}, transparent)`, margin: "0 auto" }}/>
-          </div>
+      {/* ── STATEMENT FOLD ── */}
+      <section id="statement" style={{ minHeight: "100vh", display: "flex", alignItems: "center", position: "relative", padding: "0 clamp(20px,4vw,48px)", overflow: "hidden" }}>
+        {/* Case-files photo, dimmed well back so text stays the focus */}
+        <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+          <img src="/brand/photos/statement-files.jpg" alt="" aria-hidden="true" draggable={false}
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 55%", opacity: 0.28 }} />
+          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, ${GROUND} 0%, ${GROUND} 30%, rgba(10,12,14,0.55) 65%, rgba(10,12,14,0.2) 100%)` }} />
         </div>
-      </section>
-
-      {/* ══ STATS BAR — real product facts, not adoption claims ══════════════════ */}
-      <section style={{ background: "rgba(201,168,76,0.06)", borderTop: "1px solid rgba(201,168,76,0.15)", borderBottom: "1px solid rgba(201,168,76,0.15)", padding: "0 40px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
-          {[
-            { num: 5,   label: "Court Types Supported",       suffix: "+" },
-            { num: 3,   label: "Reminder Languages",           suffix: ""  },
-            { num: 2,   label: "Daily Reminder Touchpoints",   suffix: ""  },
-            { num: 100, label: "OTP-Verified Logins",          suffix: "%" },
-          ].map((st, i) => (
-            <div key={i} style={{ borderRight: i < 3 ? "1px solid rgba(201,168,76,0.12)" : "none" }}>
-              <StatBox {...st}/>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══ ABOUT — what VakilSummons actually is ═════════════════════════════ */}
-      <section id="about" style={{ padding: "100px 60px", maxWidth: 1100, margin: "0 auto" }}>
-        <div ref={aboutRef} style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center",
-          opacity: aboutVisible ? 1 : 0,
-          transform: aboutVisible ? "none" : "translateY(40px)",
-          transition: "opacity 0.8s ease, transform 0.8s ease",
+        <div ref={statementRef} style={{
+          maxWidth: 620, position: "relative", zIndex: 2,
+          opacity: statementVisible ? 1 : 0, transform: statementVisible ? "none" : "translateY(20px)",
+          transition: "opacity 0.7s ease, transform 0.7s ease",
         }}>
-          {/* Left */}
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: GOLD, marginBottom: 12 }}>What Is VakilSummons</p>
-            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(28px,3vw,42px)", fontWeight: 700, lineHeight: 1.2, margin: "0 0 8px", color: WHITE }}>
-              Built for the<br/>
-              <span style={{ color: GOLD }}>Indian Courtroom</span>
-            </h2>
-            <div className="gold-divider" style={{ margin: "16px 0" }}/>
-
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, marginBottom: 20 }}>
-              A missed hearing isn't a small mistake — it can mean an ex-parte order, a lost opportunity to be heard, or a client who loses faith in their counsel. Court dates get lost between diaries, phone calls and memory, especially when a practice is juggling dozens of matters across different forums.
-            </p>
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, marginBottom: 20 }}>
-              VakilSummons is a case management platform built specifically for advocates practising in Indian courts — from District Forums and Consumer Commissions to High Courts and Labour Courts. Every case is filed with proper party structure, every hearing is logged in a running diary, and every client is reminded automatically by WhatsApp and email — in Telugu, Hindi or English — the night before and the morning of.
-            </p>
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", lineHeight: 1.9, marginBottom: 32 }}>
-              It isn't a generic task tracker repurposed for law — it speaks the language of a cause list: appellant and respondent, forum and stage, hearing outcome and next date.
-            </p>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              {["Consumer Forum","High Court","District Court","Labour Court","Family Court"].map(c => (
-                <span key={c} style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", color: GOLD, fontSize: 12, fontWeight: 600, padding: "5px 14px", borderRadius: 99, letterSpacing: "0.05em" }}>{c}</span>
-              ))}
-            </div>
-          </div>
-
-          {/* Right — visual */}
-          <div style={{ position: "relative" }}>
-            <div style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 20, padding: 32, position: "relative" }}>
-              <div style={{ fontSize: 64, color: GOLD, opacity: 0.2, fontFamily: "Georgia", lineHeight: 1, marginBottom: -20 }}>"</div>
-              <p style={{ fontSize: 20, fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", color: "rgba(255,255,255,0.8)", lineHeight: 1.6, marginBottom: 24 }}>
-                Justice delayed is justice denied. We make sure your clients are never the reason for delay.
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 2, background: GOLD }}/>
-                <span style={{ fontSize: 13, color: GOLD, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>VakilSummons</span>
-              </div>
-
-              <div style={{ marginTop: 28, background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: "14px 16px", borderLeft: `3px solid #25D366` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 16 }}>💬</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#25D366", textTransform: "uppercase", letterSpacing: "0.08em" }}>WhatsApp Reminder</span>
-                </div>
-                <p style={{ margin: 0, fontSize: 12.5, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>
-                  ⚖️ <strong>Hearing Tomorrow</strong><br/>
-                  📋 Business Rivalry Case | FA/494/2026<br/>
-                  🏛️ A.P. State Consumer Commission<br/>
-                  📅 Wednesday, 29 July 2026 (29-07-2026)
-                </p>
-              </div>
-            </div>
-            <div style={{ position: "absolute", top: -20, right: -20, width: 60, height: 60, border: `2px solid rgba(201,168,76,0.3)`, borderRadius: 12, transform: "rotate(15deg)" }}/>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ FEATURES ════════════════════════════════════════════════════════════ */}
-      <section id="features" style={{ padding: "80px 60px", background: "rgba(255,255,255,0.02)" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 60 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: GOLD, marginBottom: 12 }}>What We Offer</p>
-            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(28px,3vw,40px)", fontWeight: 700, color: WHITE, margin: 0 }}>
-              Everything an Advocate Needs
-            </h2>
-            <div className="gold-divider"/>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
-            {[
-              { icon: "💬", title: "WhatsApp Reminders", desc: "Automated reminders sent from your own WhatsApp number in Telugu, Hindi or English — 8 PM the night before and 7 AM on the day.", delay: 0 },
-              { icon: "📋", title: "Case Diary", desc: "Complete litigation record — notes, documents, hearing outcomes and timeline all in one place for every case.", delay: 100 },
-              { icon: "⚖️", title: "Appellant vs Respondent", desc: "Proper legal party structure — appellant, respondent, co-complainants with counsel details, exactly like a cause list.", delay: 200 },
-              { icon: "📅", title: "Hearing Calendar", desc: "Visual calendar with all scheduled hearings. See at a glance which days are busy and plan accordingly.", delay: 300 },
-              { icon: "🔐", title: "2-Factor Security", desc: "Login OTP verification ensures only authorised lawyers can access client data and case records.", delay: 400 },
-              { icon: "🏛️", title: "All Courts Supported", desc: "District Forum, Consumer Commission, High Court, Labour Court — all case types and hearing stages supported.", delay: 500 },
-            ].map((f, i) => <FeatureCard key={i} {...f}/>)}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ HOW IT WORKS ════════════════════════════════════════════════════════ */}
-      <section style={{ padding: "100px 60px", maxWidth: 1000, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: GOLD, marginBottom: 12 }}>Simple Process</p>
-          <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(28px,3vw,40px)", fontWeight: 700, color: WHITE, margin: 0 }}>How It Works</h2>
-          <div className="gold-divider"/>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))", gap: 40 }}>
-          {[
-            { n: "I",   title: "Register & Verify",          desc: "Create your lawyer account with email OTP verification. Secure from day one." },
-            { n: "II",  title: "Add Cases & Clients",         desc: "File cases with full party details — appellant, respondent, court, hearing date." },
-            { n: "III", title: "Record Each Hearing",         desc: "After every hearing, record the outcome and set the next date in the diary." },
-            { n: "IV",  title: "Reminders Go Automatically",  desc: "Clients receive WhatsApp and email reminders — 8 PM before and 7 AM on the day." },
-          ].map(({ n, title, desc }, i) => {
-            const [ref, vis] = useReveal();
-            return (
-              <div key={i} ref={ref} style={{ textAlign: "center", opacity: vis?1:0, transform: vis?"none":"translateY(30px)", transition: `opacity 0.6s ease ${i*150}ms, transform 0.6s ease ${i*150}ms` }}>
-                <div style={{ width: 60, height: 60, borderRadius: "50%", border: `2px solid rgba(201,168,76,0.4)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18, fontWeight: 700, color: GOLD }}>
-                  {n}
-                </div>
-                <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 17, fontWeight: 600, color: WHITE, margin: "0 0 10px" }}>{title}</h3>
-                <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.5)", lineHeight: 1.7, margin: 0 }}>{desc}</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ══ CTA BANNER ══════════════════════════════════════════════════════════ */}
-      <section id="contact" style={{ padding: "80px 60px" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 24, padding: "60px 48px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)", width: 300, height: 300, background: "radial-gradient(circle, rgba(201,168,76,0.1) 0%, transparent 70%)", pointerEvents: "none" }}/>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>⚖️</div>
-          <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: WHITE, margin: "0 0 12px" }}>
-            Ready to manage your practice better?
-          </h2>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", marginBottom: 36, lineHeight: 1.7 }}>
-            Built for advocates who refuse to let a hearing slip through the cracks — set up your first case in minutes.
+          <span style={{
+            position: "absolute", top: -60, left: -20, fontFamily: DISPLAY, fontWeight: 800,
+            fontSize: "clamp(160px,20vw,300px)", lineHeight: 1, color: "transparent",
+            WebkitTextStroke: `1px ${HAIRLINE}`, zIndex: -1, userSelect: "none",
+          }}>01</span>
+          <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, marginBottom: 20 }}>
+            Why VakilSummons
           </p>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center" }}>
-            <button className="btn-gold" onClick={() => navigate("/login")}>Sign In to Portal →</button>
-            <button className="btn-outline" onClick={() => navigate("/register")}>Create Account</button>
+          <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(24px,3.6vw,52px)", letterSpacing: "-0.02em", lineHeight: 1.25, maxWidth: "22ch", margin: 0 }}>
+            A missed hearing costs more than time — it costs <span style={{ color: AMBER }}>trust.</span>
+          </h2>
+        </div>
+        <FloatingSeal />
+      </section>
+
+      {/* ── RELEASES → PRACTICE AREAS ── */}
+      <section id="releases" style={{ padding: "min(12vw,120px) clamp(20px,4vw,48px)", maxWidth: 1180, margin: "0 auto" }}>
+        <div ref={releasesRef} style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(40px,6vw,90px)", alignItems: "center",
+          opacity: releasesVisible ? 1 : 0, transform: releasesVisible ? "none" : "translateY(20px)",
+          transition: "opacity 0.7s ease, transform 0.7s ease",
+        }}>
+          <div>
+            <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, marginBottom: 18 }}>
+              Practice Areas
+            </p>
+            <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(28px,3.4vw,46px)", letterSpacing: "-0.02em", lineHeight: 1.15, margin: "0 0 20px" }}>
+              Six courts.<br/><span style={{ color: TEAL }}>One system.</span>
+            </h2>
+            <p style={{ fontFamily: SANS, fontSize: 14, color: INK2, lineHeight: 1.8, marginBottom: 36, maxWidth: 400 }}>
+              Every matter filed with proper party structure — appellant, respondent,
+              forum and stage — whichever court it belongs to.
+            </p>
+            <div style={{ display: "flex", gap: 14 }}>
+              <Btn primary onClick={() => navigate("/login")}>Sign In</Btn>
+              <Btn onClick={() => navigate("/register")}>Start Free</Btn>
+            </div>
           </div>
+          <CardDeck />
         </div>
       </section>
 
-      {/* ══ FOOTER ══════════════════════════════════════════════════════════════ */}
-      <footer style={{ borderTop: "1px solid rgba(201,168,76,0.1)", padding: "32px 60px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 15, fontWeight: 700, color: WHITE }}>VakilSummons</div>
-            <div style={{ width: 4, height: 4, borderRadius: "50%", background: GOLD }}/>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Your Rights. Our Duty. Justice Delivered.</div>
-          </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
-            © {new Date().getFullYear()} VakilSummons. Built for Indian Advocates.
+      {/* ── ROSTER ── */}
+      <section ref={rosterRef} style={{
+        padding: "0 clamp(20px,4vw,48px) min(12vw,120px)", maxWidth: 900, margin: "0 auto",
+        opacity: rosterVisible ? 1 : 0, transform: rosterVisible ? "none" : "translateY(20px)",
+        transition: "opacity 0.7s ease, transform 0.7s ease",
+      }}>
+        <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, marginBottom: 20 }}>
+          Forums Supported
+        </p>
+        <Row label="ROSTER" name="District Forum"        value="Supported" delay={0} />
+        <Row label="ROSTER" name="Consumer Commission"   value="Supported" delay={60} />
+        <Row label="ROSTER" name="High Court"             value="Supported" delay={120} />
+        <Row label="ROSTER" name="Labour Court"           value="Supported" delay={180} />
+        <Row label="ROSTER" name="Family Court"           value="Supported" delay={240} />
+
+        <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, margin: "56px 0 20px" }}>
+          Reminder Schedule
+        </p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
+            <thead>
+              <tr>
+                {["Stage", "Timing", "Channel", "Languages"].map(h => (
+                  <th key={h} style={{ textAlign: "left", fontFamily: SANS, fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: MUTED, borderBottom: `1px solid ${HAIRLINE}`, padding: "0 0 12px" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Evening Reminder", "8:00 PM (day before)", "WhatsApp + Email", "EN / HI / TE"],
+                ["Morning Reminder", "7:00 AM (day of)",      "WhatsApp + Email", "EN / HI / TE"],
+              ].map((row, i) => (
+                <tr key={i}>
+                  <td style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: INK, padding: "16px 0", borderBottom: `1px solid ${HAIRLINE}` }}>{row[0]}</td>
+                  {row.slice(1).map((c, j) => (
+                    <td key={j} style={{ fontFamily: SANS, fontSize: 13, color: INK2, padding: "16px 0", borderBottom: `1px solid ${HAIRLINE}` }}>{c}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ── CLOSE ── */}
+      <section id="close" style={{ background: GROUND2, paddingTop: "min(10vw,100px)" }}>
+        <div ref={closeRef} style={{
+          padding: "0 clamp(20px,4vw,48px)", maxWidth: 900, margin: "0 auto",
+          opacity: closeVisible ? 1 : 0, transform: closeVisible ? "none" : "translateY(20px)",
+          transition: "opacity 0.7s ease, transform 0.7s ease",
+        }}>
+          <h2 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: "clamp(28px,4vw,52px)", letterSpacing: "-0.02em", lineHeight: 1.15, margin: "0 0 18px" }}>
+            Justice, <span style={{ color: AMBER }}>on schedule.</span>
+          </h2>
+          <p style={{ fontFamily: SANS, fontSize: 13.5, color: INK2, lineHeight: 1.8, marginBottom: 40, maxWidth: 460 }}>
+            Built for advocates practising in Indian courts. No hearing left to memory.
+          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16, paddingBottom: 40 }}>
+            <Btn primary onClick={() => navigate("/login")}>Sign In</Btn>
+            <Btn onClick={() => navigate("/register")}>Start Free</Btn>
           </div>
         </div>
-      </footer>
-
+        <div style={{ borderTop: `1px solid ${HAIRLINE}`, padding: "18px clamp(20px,4vw,48px)", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <span style={{ fontFamily: SANS, fontSize: 11, color: MUTED }}>© {new Date().getFullYear()} VakilSummons</span>
+          <span style={{ fontFamily: SANS, fontSize: 11, color: MUTED }}>Your Rights. Our Duty. Justice Delivered.</span>
+        </div>
+        <div style={{ overflow: "hidden", padding: "0 0 4px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", width: "103%", marginLeft: "-1.5%", transform: "translateY(16px)" }}>
+            {"VAKILSUMMONS".split("").map((ch, i) => (
+              <span key={i} style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(24px,7vw,90px)", color: INK, letterSpacing: "-0.02em", lineHeight: 1 }}>{ch}</span>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
