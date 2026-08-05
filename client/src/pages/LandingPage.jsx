@@ -87,10 +87,14 @@ const PortalHero = ({ navigate }) => {
   const imgScale = lerp(1.16, 1, p);
   const duotoneOp = lerp(0, 0.32, p);
   const dotTravel = lerp(0, 1, p);
-  const wordScale = lerp(1, 1.9, p);
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const scaleMax = vw < 480 ? 1.12 : vw < 768 ? 1.35 : 1.9;
+  const wordScale = lerp(1, scaleMax, p);
   const wordTrack = lerp(-0.01, -0.055, p); // em — tightens
-  const leftShift = -halfWidths.l * p;
-  const rightShift = halfWidths.r * p;
+  // Cap the shift so the split can never push text past the viewport edge
+  const maxShift = Math.max((vw * 0.5 - 24), 0);
+  const leftShift = -Math.min(halfWidths.l * p, maxShift);
+  const rightShift = Math.min(halfWidths.r * p, maxShift);
 
   return (
     <section ref={heroRef} style={{ height: `${HERO_VH * 100}vh`, position: "relative" }}>
@@ -141,14 +145,14 @@ const PortalHero = ({ navigate }) => {
         }}>
           <span ref={leftSpanRef} style={{
             fontFamily: DISPLAY, fontWeight: 800, color: INK,
-            fontSize: "clamp(34px,7vw,96px)",
-            transform: `scale(${wordScale}) translateX(${leftShift}px)`,
+            fontSize: "clamp(24px,7vw,96px)",
+            transform: `translateX(${leftShift}px) scale(${wordScale})`,
             letterSpacing: `${wordTrack}em`, display: "inline-block",
           }}>VAKIL</span>
           <span ref={rightSpanRef} style={{
             fontFamily: DISPLAY, fontWeight: 800, color: INK,
-            fontSize: "clamp(34px,7vw,96px)",
-            transform: `scale(${wordScale}) translateX(${rightShift}px)`,
+            fontSize: "clamp(24px,7vw,96px)",
+            transform: `translateX(${rightShift}px) scale(${wordScale})`,
             letterSpacing: `${wordTrack}em`, display: "inline-block",
           }}>SUMMONS</span>
         </div>
@@ -191,6 +195,12 @@ const PortalHero = ({ navigate }) => {
 };
 
 /* ── Hint text below the deck ── */
+const SCHEDULE_ROWS = [
+  ["Evening Reminder", "8:00 PM (day before)",     "WhatsApp + Email", "EN / HI / TE"],
+  ["Morning Reminder", "7:00 AM (day of)",          "WhatsApp + Email", "EN / HI / TE"],
+  ["Login OTP",        "Immediate — 10 min expiry", "Email",            "EN"],
+];
+
 const CASE_DECK = [
   { key: "Civil",      icon: "⚖️", forum: "District Court",              structure: "Plaintiff vs Defendant" },
   { key: "Criminal",   icon: "🚔", forum: "District / Sessions Court",    structure: "Prosecution vs Accused" },
@@ -492,6 +502,12 @@ const LandingPage = () => {
           .corner-meta-secondary { display: none; }
           .floating-detail { display: none; }
         }
+        .schedule-table { display: block; }
+        .schedule-cards { display: none; }
+        @media (max-width: 640px) {
+          .schedule-table { display: none; }
+          .schedule-cards { display: block; }
+        }
         ::selection { background: ${AMBER}; color: ${GROUND}; }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
@@ -592,7 +608,9 @@ const LandingPage = () => {
         <p style={{ fontFamily: SANS, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: MUTED, margin: "56px 0 20px" }}>
           Reminder Schedule
         </p>
-        <div style={{ overflowX: "auto" }}>
+
+        {/* Desktop: real table */}
+        <div className="schedule-table" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 480 }}>
             <thead>
               <tr>
@@ -602,11 +620,7 @@ const LandingPage = () => {
               </tr>
             </thead>
             <tbody>
-              {[
-                ["Evening Reminder", "8:00 PM (day before)", "WhatsApp + Email", "EN / HI / TE"],
-                ["Morning Reminder", "7:00 AM (day of)",      "WhatsApp + Email", "EN / HI / TE"],
-                ["Login OTP",        "Immediate — 10 min expiry", "Email",       "EN"],
-              ].map((row, i) => (
+              {SCHEDULE_ROWS.map((row, i) => (
                 <tr key={i}>
                   <td style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 15, color: INK, padding: "16px 0", borderBottom: `1px solid ${HAIRLINE}` }}>{row[0]}</td>
                   {row.slice(1).map((c, j) => (
@@ -616,6 +630,21 @@ const LandingPage = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile: stacked cards, no horizontal scrolling */}
+        <div className="schedule-cards">
+          {SCHEDULE_ROWS.map((row, i) => (
+            <div key={i} style={{ borderBottom: `1px solid ${HAIRLINE}`, padding: "18px 0" }}>
+              <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: INK, marginBottom: 10 }}>{row[0]}</div>
+              {["Timing", "Channel", "Languages"].map((label, j) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, padding: "4px 0" }}>
+                  <span style={{ fontFamily: SANS, color: MUTED, letterSpacing: "0.05em", textTransform: "uppercase", fontSize: 10.5 }}>{label}</span>
+                  <span style={{ fontFamily: SANS, color: INK2, textAlign: "right" }}>{row[j + 1]}</span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </section>
 
