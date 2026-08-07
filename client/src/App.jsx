@@ -17,6 +17,7 @@ import NotificationsPage  from "./pages/NotificationsPage";
 import LoginPage          from "./pages/LoginPage";
 import RegisterPage       from "./pages/RegisterPage";
 import ProtectedRoute     from "./components/ProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminDashboard     from "./pages/AdminDashboard";
 import VerifyLoginOtpPage from "./pages/VerifyLoginOtpPage";
 import UserManagement     from "./pages/UserManagement";
@@ -38,8 +39,8 @@ function App() {
         <Route path="/verify-otp"       element={<VerifyOtpPage />} />
         <Route path="/verify-login-otp" element={<VerifyLoginOtpPage />} />
 
-        {/* ── Admin panel ── */}
-        <Route path="/admin" element={<AdminLayout />}>
+        {/* ── Admin panel — requires login AND admin role ── */}
+        <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
           <Route index                element={<AdminDashboard />} />
           <Route path="users"         element={<UserManagement />} />
           <Route path="clients"       element={<ClientsPage />} />
