@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCases, createCase, updateCase, deleteCase } from "../services/caseService";
+import { getCases, createCase, updateCase, deleteCase, checkCaseNumber } from "../services/caseService";
 import { createReminder } from "../services/notificationService";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getClients, createClient } from "../services/clientService";
@@ -218,6 +218,7 @@ const Cases = () => {
   const [submitting,      setSubmitting]      = useState(false);
   const [formData,        setFormData]        = useState(defaultForm);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [dupCheck,        setDupCheck]        = useState({ checking:false, exists:false, caseTitle:null });
 
   // Pre-fill date from calendar
   useEffect(() => {
@@ -237,6 +238,26 @@ const Cases = () => {
     setClients(prev => [newClient, ...prev]);
     setFormData(prev => ({ ...prev, client: newClient._id }));
   };
+
+  // Live "Case already exists" check as the number is typed — debounced so it
+  // doesn't fire an API call on every keystroke.
+  useEffect(() => {
+    const num = formData.caseNumber?.trim();
+    if (!num) { setDupCheck({ checking:false, exists:false, caseTitle:null }); return; }
+
+    setDupCheck(prev => ({ ...prev, checking:true }));
+    const timer = setTimeout(async () => {
+      try {
+        const result = await checkCaseNumber(formData.casePrefix, num, editingCase?._id);
+        setDupCheck({ checking:false, exists: result.exists, caseTitle: result.caseTitle });
+      } catch (e) {
+        console.error("Case number check failed:", e);
+        setDupCheck({ checking:false, exists:false, caseTitle:null });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.caseNumber, formData.casePrefix, editingCase]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -300,6 +321,13 @@ const Cases = () => {
     // Validate: must have either a client OR a group ID
     if (!formData.client && !formData.whatsappGroupId.trim()) {
       alert("Please select a client OR enter a WhatsApp Group ID.");
+      return;
+    }
+
+    // Block submit on a known duplicate — the backend also checks this
+    // (in case this state is stale or the check hadn't finished yet).
+    if (!editingCase && dupCheck.exists) {
+      alert(`Case already exists${dupCheck.caseTitle ? ` — "${dupCheck.caseTitle}"` : ""}. Please check the case number.`);
       return;
     }
 
@@ -387,6 +415,14 @@ const Cases = () => {
 
               <FormField label="Case Number">
                 <input name="caseNumber" placeholder="e.g. 4/2026  or  443/2023" value={formData.caseNumber} onChange={handleChange} required style={inputStyle()} {...focusHandlers} />
+                {dupCheck.checking && (
+                  <div style={{ fontSize:12, color:"#6b7280", marginTop:4 }}>Checking…</div>
+                )}
+                {!dupCheck.checking && dupCheck.exists && (
+                  <div style={{ fontSize:12, color:"#dc2626", marginTop:4, fontWeight:600 }}>
+                    ⚠️ Case already exists{dupCheck.caseTitle ? ` — "${dupCheck.caseTitle}"` : ""}
+                  </div>
+                )}
               </FormField>
 
               {/* Case Title */}

@@ -100,3 +100,19 @@ async () => {
 
   return response.data;
 };
+
+// CHECK IF CASE NUMBER ALREADY EXISTS
+export const checkCaseNumber =
+  async (casePrefix, caseNumber, excludeId) => {
+
+    const params = new URLSearchParams({ casePrefix, caseNumber });
+    if (excludeId) params.append("excludeId", excludeId);
+
+    const response =
+      await API.get(
+        `/cases/check-number?${params.toString()}`,
+        getToken()
+      );
+
+    return response.data;
+};
