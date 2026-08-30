@@ -25,6 +25,7 @@ import AdminLayout        from "./layout/AdminLayout";
 import DiaryPage          from "./pages/DiaryPage";
 import ProfilePage        from "./pages/ProfilePage";
 import CauselistImport    from "./components/CauselistImport";
+import CaseBrowser        from "./components/CaseBrowser";
 
 function App() {
   return (
@@ -72,6 +73,7 @@ function App() {
                   <Route path="/history"            element={<HistoryPage />} />
                   <Route path="/profile"            element={<ProfilePage />} />
                   <Route path="/causelist-import"   element={<CauselistImport />} />
+                  <Route path="/case-browser"        element={<CaseBrowser />} />
                   {isAdmin() && <Route path="/admin-page" element={<AdminPage />} />}
                 </Routes>
               </div>
