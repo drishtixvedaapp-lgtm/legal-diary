@@ -62,10 +62,15 @@ const Sidebar = () => {
       {/* Menu */}
       <nav style={{ flex: 1, padding: "0 12px", display: "flex", flexDirection: "column", gap: 2 }}>
         {menuItems.map((item) => {
-          const active = location.pathname === item.path;
+          // item.path is a "route inside /dashboard" like "/" or "/clients".
+          // Sidebar renders INSIDE the nested /dashboard/* routes, so a
+          // leading-slash Link target is absolute to the SITE ROOT, not
+          // relative to /dashboard — must build the full real path here.
+          const fullPath = item.path === "/" ? "/dashboard" : `/dashboard${item.path}`;
+          const active = location.pathname === fullPath;
           const Icon = item.icon;
           return (
-            <Link key={item.path} to={item.path} style={{ textDecoration: "none" }}>
+            <Link key={item.path} to={fullPath} style={{ textDecoration: "none" }}>
               <div style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "10px 14px", borderRadius: 10,
