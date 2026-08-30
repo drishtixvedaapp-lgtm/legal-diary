@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Briefcase, CalendarDays,
-  Bell, Scale, Archive, LogOut, ChevronRight, Search, Filter,
+  Bell, Scale, Archive, LogOut, ChevronRight, Search, Filter, Mic,
 } from "lucide-react";
 import { isAdmin, isLawyer } from "../utils/roleHelper";
 
@@ -18,6 +18,7 @@ const Sidebar = () => {
       { name: "History",      path: "/history",       icon: Archive    },
       { name: "Causelist Import", path: "/causelist-import", icon: Search },
       { name: "Case Browser",     path: "/case-browser",     icon: Filter },
+      { name: "Voice Phone Fill", path: "/voice-phone",      icon: Mic },
     ] : []),
     { name: "Notifications",  path: "/notifications", icon: Bell       },
     ...(isAdmin() ? [
