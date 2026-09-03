@@ -67,15 +67,19 @@ const listenOnce = ({ silenceMs = 2500, maxMs = 20000 } = {}) => new Promise((re
   };
 
   recognition.onerror = (e) => {
-    if (e.error === "no-speech") return; // just a quiet moment — let the silence timer decide, don't fail immediately
+    if (e.error === "no-speech" || e.error === "aborted") return; // quiet moment or a restart in progress — let the silence/max timers decide, don't fail immediately
     finish(reject, new Error(e.error || "Speech recognition error"));
   };
 
   recognition.onend = () => {
-    // Some browsers stop "continuous" mode on their own — settle with
-    // whatever was actually heard, rather than hanging (the original bug).
-    finish(hasHeardAnything ? resolve : reject,
-      hasHeardAnything ? finalTranscript.trim() : new Error("No speech detected."));
+    if (settled) return; // we deliberately stopped it ourselves — nothing more to do here
+    // KNOWN BROWSER QUIRK: Chrome sometimes ends "continuous" listening on
+    // its own after just a couple seconds, even though we asked it not to.
+    // Instead of treating that as "she's done talking" (which cut people
+    // off too early — the exact "closing very fast" problem), just
+    // restart listening immediately. Our OWN silence timer above is what
+    // actually decides when she's really finished, not the browser.
+    try { recognition.start(); } catch { /* brief restart race — harmless, next event will recover */ }
   };
 
   resetSilenceTimer(); // starts the clock even before anything is said, in case there's total silence
