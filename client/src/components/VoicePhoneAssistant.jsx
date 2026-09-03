@@ -12,46 +12,73 @@ const speak = (text) => new Promise((resolve) => {
   window.speechSynthesis.speak(utter);
 });
 
-// FIXED: previously, if nothing was heard before the timeout, this promise
-// never resolved OR rejected — it just hung forever (this was the bug
-// causing the page to freeze on "Confirming..."). Now every path (result,
-// error, timeout, or the browser's own "end" event with nothing heard)
-// guarantees the promise settles exactly once, using a "settled" guard so
-// two events firing close together can't cause a double-resolve crash.
-const listenOnce = ({ timeoutMs = 8000 } = {}) => new Promise((resolve, reject) => {
+// FIXED (again): previously this stopped listening the instant Chrome's
+// own speech engine detected ANY brief pause — which cut people off
+// mid-number if they paused naturally between digit groups. Now it uses
+// "continuous" listening and only finishes after 2.5 seconds of REAL
+// silence following actual speech, so a natural pause while thinking/
+// breathing doesn't get mistaken for "done talking". There's still an
+// overall hard cap (20s) so it never listens forever if something goes
+// wrong.
+const listenOnce = ({ silenceMs = 2500, maxMs = 20000 } = {}) => new Promise((resolve, reject) => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) return reject(new Error("Voice input isn't supported in this browser — try Chrome."));
 
   const recognition = new SpeechRecognition();
   recognition.lang = "en-IN";
-  recognition.interimResults = false;
+  recognition.interimResults = true;
+  recognition.continuous = true;
   recognition.maxAlternatives = 1;
 
   let settled = false;
+  let finalTranscript = "";
+  let hasHeardAnything = false;
+  let silenceTimer = null;
+
   const finish = (fn, arg) => {
     if (settled) return;
     settled = true;
-    clearTimeout(timeout);
+    clearTimeout(silenceTimer);
+    clearTimeout(maxTimer);
+    try { recognition.stop(); } catch { /* already stopped — fine */ }
     fn(arg);
   };
 
-  const timeout = setTimeout(() => {
-    recognition.stop();
-    finish(reject, new Error("No speech detected — timed out."));
-  }, timeoutMs);
+  // Absolute safety cap, regardless of what the browser does
+  const maxTimer = setTimeout(() => {
+    finish(hasHeardAnything ? resolve : reject,
+      hasHeardAnything ? finalTranscript.trim() : new Error("No speech detected — timed out."));
+  }, maxMs);
+
+  const resetSilenceTimer = () => {
+    clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => {
+      finish(hasHeardAnything ? resolve : reject,
+        hasHeardAnything ? finalTranscript.trim() : new Error("No speech detected."));
+    }, silenceMs);
+  };
 
   recognition.onresult = (event) => {
-    finish(resolve, event.results[0][0].transcript || "");
-  };
-  recognition.onerror = (e) => {
-    finish(reject, new Error(e.error || "Speech recognition error"));
-  };
-  recognition.onend = () => {
-    // Fires even on plain silence with nothing heard — must still settle
-    // the promise here, or the page freezes exactly like it was doing.
-    finish(reject, new Error("No speech detected."));
+    hasHeardAnything = true;
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
+    }
+    resetSilenceTimer(); // she's actively speaking — give her more time, not less
   };
 
+  recognition.onerror = (e) => {
+    if (e.error === "no-speech") return; // just a quiet moment — let the silence timer decide, don't fail immediately
+    finish(reject, new Error(e.error || "Speech recognition error"));
+  };
+
+  recognition.onend = () => {
+    // Some browsers stop "continuous" mode on their own — settle with
+    // whatever was actually heard, rather than hanging (the original bug).
+    finish(hasHeardAnything ? resolve : reject,
+      hasHeardAnything ? finalTranscript.trim() : new Error("No speech detected."));
+  };
+
+  resetSilenceTimer(); // starts the clock even before anything is said, in case there's total silence
   recognition.start();
 });
 
