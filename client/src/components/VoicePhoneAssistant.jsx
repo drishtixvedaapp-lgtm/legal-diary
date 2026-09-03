@@ -12,6 +12,12 @@ const speak = (text) => new Promise((resolve) => {
   window.speechSynthesis.speak(utter);
 });
 
+// FIXED: previously, if nothing was heard before the timeout, this promise
+// never resolved OR rejected — it just hung forever (this was the bug
+// causing the page to freeze on "Confirming..."). Now every path (result,
+// error, timeout, or the browser's own "end" event with nothing heard)
+// guarantees the promise settles exactly once, using a "settled" guard so
+// two events firing close together can't cause a double-resolve crash.
 const listenOnce = ({ timeoutMs = 8000 } = {}) => new Promise((resolve, reject) => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) return reject(new Error("Voice input isn't supported in this browser — try Chrome."));
@@ -21,14 +27,30 @@ const listenOnce = ({ timeoutMs = 8000 } = {}) => new Promise((resolve, reject) 
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
 
-  const timeout = setTimeout(() => { recognition.stop(); }, timeoutMs);
+  let settled = false;
+  const finish = (fn, arg) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeout);
+    fn(arg);
+  };
+
+  const timeout = setTimeout(() => {
+    recognition.stop();
+    finish(reject, new Error("No speech detected — timed out."));
+  }, timeoutMs);
 
   recognition.onresult = (event) => {
-    clearTimeout(timeout);
-    resolve(event.results[0][0].transcript || "");
+    finish(resolve, event.results[0][0].transcript || "");
   };
-  recognition.onerror = (e) => { clearTimeout(timeout); reject(new Error(e.error || "Speech recognition error")); };
-  recognition.onend = () => { clearTimeout(timeout); };
+  recognition.onerror = (e) => {
+    finish(reject, new Error(e.error || "Speech recognition error"));
+  };
+  recognition.onend = () => {
+    // Fires even on plain silence with nothing heard — must still settle
+    // the promise here, or the page freezes exactly like it was doing.
+    finish(reject, new Error("No speech detected."));
+  };
 
   recognition.start();
 });
@@ -126,7 +148,9 @@ const VoicePhoneAssistant = () => {
         if (sessionActive.current) runCaseStep(idx);
       }
     } catch (e) {
-      addLog(`⚠️ ${e.message} — you can retry or type the number manually below.`);
+      // This now correctly fires when the confirmation times out with
+      // silence (previously it would hang here forever instead).
+      addLog(`⚠️ ${e.message} — you can retry with the button below, or just type the number manually.`);
       setPhase("idle");
     }
   };
@@ -139,6 +163,12 @@ const VoicePhoneAssistant = () => {
     runCaseStep(0);
   };
 
+  const retryCurrentCase = () => {
+    if (!currentCase) return;
+    sessionActive.current = true;
+    runCaseStep(index);
+  };
+
   const stopSession = () => {
     sessionActive.current = false;
     window.speechSynthesis?.cancel();
@@ -148,8 +178,9 @@ const VoicePhoneAssistant = () => {
 
   const submitManual = async () => {
     const phone = manualPhone.replace(/\D/g, "");
-    if (phone.length !== 10) return addLog("⚠️ Enter a valid 10-digit number.");
+    if (phone.length !== 10) return addLog(`⚠️ "${manualPhone}" isn't a valid 10-digit number (got ${phone.length} digit${phone.length === 1 ? "" : "s"} after removing spaces/symbols).`);
     setManualPhone("");
+    sessionActive.current = false; // stop any pending voice loop before manual save
     await saveAndAdvance(phone);
   };
 
@@ -194,8 +225,14 @@ const VoicePhoneAssistant = () => {
             )}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {phase === "idle" && (
+              {phase === "idle" && index === 0 && log.length === 0 && (
                 <button onClick={startSession} style={btnPrimary}>▶️ Start Voice Session</button>
+              )}
+              {phase === "idle" && (log.length > 0 || index > 0) && phase !== "done" && (
+                <>
+                  <button onClick={retryCurrentCase} style={btnPrimary}>🔁 Retry This Case</button>
+                  <button onClick={skipCase} style={btnSecondary}>⏭️ Skip This Case</button>
+                </>
               )}
               {(phase === "speaking" || phase === "listening" || phase === "confirming" || phase === "saving") && (
                 <>
