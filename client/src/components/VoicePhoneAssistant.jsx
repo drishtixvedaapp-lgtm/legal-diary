@@ -96,6 +96,12 @@ const spacedDigits = (phone) => phone.split("").join(" ");
 const isYes = (t) => /\b(yes|yeah|yep|correct|right|confirm)\b/i.test(t);
 const isNo  = (t) => /\b(no|nope|wrong|incorrect|repeat)\b/i.test(t);
 
+// Small pause between finishing a spoken prompt and starting to listen —
+// without this, the mic sometimes starts listening before it's actually
+// ready (right after the previous listening session ends), missing the
+// first word or two of the reply entirely.
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // ── Component ────────────────────────────────────────────────────────────────
 const VoicePhoneAssistant = () => {
   const [queue, setQueue] = useState([]);
@@ -149,6 +155,7 @@ const VoicePhoneAssistant = () => {
       setPhase("speaking");
       await speak(`Case ${idx + 1} of ${queue.length}. ${c.caseTitle}. Case number ${c.caseNumber}. Please say the phone number.`);
       if (!sessionActive.current) return;
+      await pause(700); // give the mic a moment to properly reset before listening
 
       setPhase("listening");
       const transcript = await listenOnce();
@@ -165,6 +172,7 @@ const VoicePhoneAssistant = () => {
       setPhase("confirming");
       await speak(`I heard ${spacedDigits(phone)}. Say yes to confirm, or no to try again.`);
       if (!sessionActive.current) return;
+      await pause(700); // same reset pause before listening for the yes/no
 
       const confirmation = await listenOnce();
       addLog(`🎙️ Confirmation: "${confirmation}"`);
