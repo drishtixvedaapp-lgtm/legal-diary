@@ -32,8 +32,14 @@ const listenOnce = ({ silenceMs = 2500, maxMs = 20000 } = {}) => new Promise((re
 
   let settled = false;
   let finalTranscript = "";
+  let latestInterim = "";
   let hasHeardAnything = false;
   let silenceTimer = null;
+
+  // Combines confirmed + not-yet-confirmed speech — short words like "yes"
+  // or "no" sometimes never get marked as fully "confirmed" by the browser
+  // before the session ends, and were being silently dropped without this.
+  const currentBestGuess = () => (finalTranscript + " " + latestInterim).trim();
 
   const finish = (fn, arg) => {
     if (settled) return;
@@ -47,21 +53,23 @@ const listenOnce = ({ silenceMs = 2500, maxMs = 20000 } = {}) => new Promise((re
   // Absolute safety cap, regardless of what the browser does
   const maxTimer = setTimeout(() => {
     finish(hasHeardAnything ? resolve : reject,
-      hasHeardAnything ? finalTranscript.trim() : new Error("No speech detected — timed out."));
+      hasHeardAnything ? currentBestGuess() : new Error("No speech detected — timed out."));
   }, maxMs);
 
   const resetSilenceTimer = () => {
     clearTimeout(silenceTimer);
     silenceTimer = setTimeout(() => {
       finish(hasHeardAnything ? resolve : reject,
-        hasHeardAnything ? finalTranscript.trim() : new Error("No speech detected."));
+        hasHeardAnything ? currentBestGuess() : new Error("No speech detected."));
     }, silenceMs);
   };
 
   recognition.onresult = (event) => {
     hasHeardAnything = true;
+    latestInterim = "";
     for (let i = event.resultIndex; i < event.results.length; i++) {
       if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
+      else latestInterim += event.results[i][0].transcript;
     }
     resetSilenceTimer(); // she's actively speaking — give her more time, not less
   };
