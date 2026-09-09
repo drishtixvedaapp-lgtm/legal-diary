@@ -418,6 +418,19 @@ const GLOBAL_CSS = `
 
   /* ── Outer spacing ── */
   .dh-section { margin-top: 28px; }
+
+  /* ── Mobile ── */
+  @media(max-width:768px){
+    .dh-hero { padding: 32px 20px 26px; border-radius: 0 0 20px 20px; }
+    .dh-summary { padding: 18px; margin-top: 22px; }
+    .dh-card { padding: 18px 16px; }
+    .dh-btn { min-height: 44px; }
+    .dh-btn.dh-btn-danger, .dh-btn.dh-btn-open { min-height: 38px; padding: 8px 14px; }
+  }
+  @media(max-width:600px){
+    .dh-stages { overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+    .dh-stage-item { flex: 0 0 74px; }
+  }
 `;
 
 /* ─── Tiny helpers ─────────────────────────────────────────────────────────── */
@@ -687,7 +700,7 @@ const DiaryPage = () => {
                 <div className="dh-empty-text">No hearings recorded yet.</div>
               </div>
             ) : (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:"14px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:"14px" }}>
                 {outcomes.map((item) => (
                   <div key={item._id} className="dh-hearing-card">
                     <div className="dh-hearing-date">{fmt(item.hearingDate)}</div>

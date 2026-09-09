@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getClients, deleteClient } from "../services/clientService";
 import { getCases } from "../services/caseService";
+import useIsMobile from "../hooks/useIsMobile";
 
 const getInitials = (name = "") =>
   name.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("");
@@ -26,6 +27,7 @@ const Avatar = ({ name, size = 40 }) => {
 };
 
 const ClientsPage = () => {
+  const isMobile = useIsMobile();
   const [clients,    setClients]    = useState([]);
   const [cases,      setCases]      = useState([]);
   const [search,     setSearch]     = useState("");
@@ -57,10 +59,10 @@ const ClientsPage = () => {
   );
 
   return (
-    <div style={{ background:"#f1f5f9", minHeight:"100vh", padding:"28px 32px", fontFamily:"'Inter',sans-serif" }}>
+    <div style={{ background:"#f1f5f9", minHeight:"100vh", padding: isMobile ? "16px 14px" : "28px 32px", fontFamily:"'Inter',sans-serif" }}>
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:24 }}>
+      <div style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-end", justifyContent:"space-between", gap:12, marginBottom:24 }}>
         <div>
           <p style={{ margin:0, fontSize:11, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:"#64748b", marginBottom:4 }}>Reference List</p>
           <h1 style={{ margin:0, fontSize:26, fontWeight:800, color:"#0f172a", letterSpacing:"-0.4px" }}>Clients</h1>
@@ -104,8 +106,49 @@ const ClientsPage = () => {
         </div>
       )}
 
-      {/* Client table */}
-      {filtered.length > 0 && (
+      {/* Client list — stacked cards on mobile, avoids the 5-column table overflowing */}
+      {filtered.length > 0 && isMobile && (
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          {filtered.map(client => {
+            const count = caseCountFor(client._id);
+            return (
+              <div key={client._id} style={{ background:"#fff", borderRadius:14, border:"1px solid #e2e8f0", padding:16, boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+                  <Avatar name={client.name} />
+                  <div style={{ minWidth:0, flex:1 }}>
+                    <p style={{ margin:0, fontSize:15, fontWeight:600, color:"#0f172a", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{client.name}</p>
+                    {client.occupation && <p style={{ margin:"2px 0 0", fontSize:11.5, color:"#3b82f6", fontWeight:600 }}>{client.occupation}</p>}
+                  </div>
+                  <span style={{
+                    display:"inline-flex", alignItems:"center", justifyContent:"center",
+                    width:28, height:28, borderRadius:8, flexShrink:0,
+                    background: count > 0 ? "#eff6ff" : "#f1f5f9",
+                    color: count > 0 ? "#1d4ed8" : "#94a3b8",
+                    fontSize:13, fontWeight:700,
+                  }}>
+                    {count}
+                  </span>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:14, fontSize:13.5, color:"#475569" }}>
+                  <span>📞 {client.phone || "—"}{client.phone2 ? `, ${client.phone2}` : ""}</span>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>✉️ {client.email || "—"}</span>
+                </div>
+                <button onClick={() => handleDelete(client._id)} disabled={deletingId === client._id} style={{
+                  width:"100%", minHeight:44, background:"transparent", border:"1px solid #fecaca", borderRadius:8,
+                  color:"#ef4444", fontSize:13, fontWeight:600,
+                  cursor: deletingId===client._id ? "not-allowed" : "pointer",
+                  opacity: deletingId===client._id ? 0.5 : 1, fontFamily:"inherit",
+                }}>
+                  {deletingId===client._id ? "…" : "🗑 Delete"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Client table — desktop only */}
+      {filtered.length > 0 && !isMobile && (
         <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", overflow:"hidden", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
           {/* Table header */}
           <div style={{ display:"grid", gridTemplateColumns:"2fr 1.5fr 1.5fr 1fr 80px", gap:0, padding:"10px 20px", background:"#f8fafc", borderBottom:"1px solid #e2e8f0" }}>

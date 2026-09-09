@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { createCauselistJob, getCauselistJobs, getCauselistJobById } from "../services/causelistJobService";
+import useIsMobile from "../hooks/useIsMobile";
 
 const inputStyle = () => ({
   padding: "9px 12px", borderRadius: 9, border: "1.5px solid #e2e8f0",
@@ -28,7 +29,7 @@ const JobCard = ({ job }) => {
   const pct = job.totalDates > 0 ? Math.round((job.datesProcessed / job.totalDates) * 100) : 0;
   return (
     <div style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 12, padding: 18, marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
         <div>
           <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a" }}>
             {job.surname} {job.givenName} — {job.commission} / {job.district}
@@ -52,7 +53,7 @@ const JobCard = ({ job }) => {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 18, fontSize: 13, color: "#334155" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", fontSize: 13, color: "#334155" }}>
         <span>🔎 {job.matchesFound} match{job.matchesFound === 1 ? "" : "es"}</span>
         <span>✅ {job.casesCreated} created</span>
         <span>⏭️ {job.casesSkipped} skipped (existing)</span>
@@ -67,7 +68,7 @@ const JobCard = ({ job }) => {
       {job.log?.length > 0 && (
         <details style={{ marginTop: 10 }}>
           <summary style={{ fontSize: 12, color: "#2563eb", cursor: "pointer" }}>View log ({job.log.length} lines)</summary>
-          <div style={{ marginTop: 8, maxHeight: 200, overflowY: "auto", background: "#f8fafc", borderRadius: 8, padding: 10, fontSize: 11, fontFamily: "monospace", color: "#475569" }}>
+          <div style={{ marginTop: 8, maxHeight: 200, overflowY: "auto", background: "#f8fafc", borderRadius: 8, padding: 10, fontSize: 11, fontFamily: "monospace", color: "#475569", wordBreak: "break-word" }}>
             {job.log.map((line, i) => <div key={i}>{line}</div>)}
           </div>
         </details>
@@ -77,6 +78,7 @@ const JobCard = ({ job }) => {
 };
 
 const CauselistImport = () => {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState({
     commission: "", district: "", dateFrom: "", dateTo: "",
     surname: "", givenName: "", lawyerEmail: "",
@@ -142,17 +144,17 @@ const CauselistImport = () => {
       </p>
 
       <form onSubmit={handleSubmit} style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: 22, marginBottom: 28 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
           {fi("commission", "Commission", "text", "e.g. ANDHRA PRADESH or NCDRC")}
           {fi("district", "CauseList For (District/Commission)", "text", "e.g. Krishna at Vijaywada")}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
           {fi("dateFrom", "Start Date", "date")}
           {fi("dateTo", "End Date", "date")}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
           {fi("surname", "Advocate Surname", "text", "e.g. Manne")}
           {fi("givenName", "Advocate Given Name", "text", "e.g. Hari Babu")}
         </div>
@@ -170,7 +172,7 @@ const CauselistImport = () => {
         {error && <p style={{ color: "#dc2626", fontSize: 13, background: "#fef2f2", padding: "8px 12px", borderRadius: 8, marginBottom: 14 }}>{error}</p>}
 
         <button type="submit" disabled={submitting}
-          style={{ padding: "11px 22px", borderRadius: 10, border: "none", background: submitting ? "#93c5fd" : "#2563eb", color: "#fff", fontWeight: 700, fontSize: 14, cursor: submitting ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+          style={{ padding: "11px 22px", minHeight: 44, borderRadius: 10, border: "none", background: submitting ? "#93c5fd" : "#2563eb", color: "#fff", fontWeight: 700, fontSize: 14, cursor: submitting ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
           {submitting ? "Starting…" : "▶️ Start Import"}
         </button>
       </form>

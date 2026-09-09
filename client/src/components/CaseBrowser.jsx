@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCaseFilterOptions, getFilteredCases } from "../services/caseBrowseService";
 import { Link } from "react-router-dom";
+import useIsMobile from "../hooks/useIsMobile";
 
 const selectStyle = {
   padding: "9px 12px", borderRadius: 9, border: "1.5px solid #e2e8f0",
@@ -10,6 +11,7 @@ const selectStyle = {
 const label = { fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#64748b", marginBottom: 5, display: "block" };
 
 const CaseBrowser = () => {
+  const isMobile = useIsMobile();
   const [options, setOptions] = useState({ courtNames: [], caseTypes: [], statuses: [], lawyerRepresentsValues: [] });
   const [filters, setFilters] = useState({ courtName: "", caseType: "", status: "", lawyerRepresents: "", hasClientPhone: "", search: "" });
   const [cases, setCases] = useState([]);
@@ -66,7 +68,7 @@ const CaseBrowser = () => {
 
       {/* Filter bar */}
       <div style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: 18, marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(5, 1fr)", gap: 12, marginBottom: 12 }}>
           {sel("courtName", "Court / Commission", options.courtNames)}
           {sel("caseType", "Case Type", options.caseTypes)}
           {sel("status", "Status", options.statuses)}
@@ -80,20 +82,20 @@ const CaseBrowser = () => {
             </select>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 10 }}>
           <input
             name="search" value={filters.search} onChange={handleFilterChange}
             placeholder="Search case number or title…"
-            style={{ ...selectStyle, flex: 1 }}
+            style={{ ...selectStyle, flex: 1, minWidth: 0 }}
           />
-          <button onClick={clearFilters} style={{ padding: "9px 16px", borderRadius: 9, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+          <button onClick={clearFilters} style={{ padding: "9px 16px", minHeight: isMobile ? 44 : "auto", borderRadius: 9, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#64748b", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
             Clear filters
           </button>
         </div>
       </div>
 
       {/* Summary bar */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 14, fontSize: 13, color: "#475569" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 14, fontSize: 13, color: "#475569" }}>
         <span><strong>{cases.length}</strong> case{cases.length === 1 ? "" : "s"} found</span>
         {missingPhoneCount > 0 && <span style={{ color: "#b45309" }}>⚠️ {missingPhoneCount} missing contact info</span>}
       </div>

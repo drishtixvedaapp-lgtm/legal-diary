@@ -304,7 +304,7 @@ const VoicePhoneAssistant = () => {
                 <input
                   value={manualPhone} onChange={e => setManualPhone(e.target.value)}
                   placeholder="10-digit phone number"
-                  style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 14 }}
+                  style={{ flex: 1, minWidth: 0, padding: "9px 12px", minHeight: 44, boxSizing: "border-box", borderRadius: 9, border: "1.5px solid #e2e8f0", fontSize: 14 }}
                 />
                 <button onClick={submitManual} style={btnPrimary}>Save & Next</button>
               </div>
@@ -323,9 +323,9 @@ const VoicePhoneAssistant = () => {
   );
 };
 
-const btnPrimary = { padding: "10px 18px", borderRadius: 9, border: "none", background: "#2563eb", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
-const btnSecondary = { padding: "10px 18px", borderRadius: 9, border: "1.5px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
-const btnDanger = { padding: "10px 18px", borderRadius: 9, border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
+const btnPrimary = { padding: "10px 18px", minHeight: 44, borderRadius: 9, border: "none", background: "#2563eb", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
+const btnSecondary = { padding: "10px 18px", minHeight: 44, borderRadius: 9, border: "1.5px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
+const btnDanger = { padding: "10px 18px", minHeight: 44, borderRadius: 9, border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit" };
 const statusPill = (phase) => ({
   padding: "9px 16px", borderRadius: 999, fontSize: 13, fontWeight: 700,
   background: phase === "listening" ? "#dbeafe" : "#f1f5f9",

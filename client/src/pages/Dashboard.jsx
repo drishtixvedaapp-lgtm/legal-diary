@@ -3,6 +3,7 @@ import { getClients }      from "../services/clientService";
 import { getCases }        from "../services/caseService";
 import { getDashboardStats } from "../services/dashboardService";
 import { Users, Briefcase, CheckCircle, Clock, FileText, AlertTriangle, Calendar, Building2 } from "lucide-react";
+import useIsMobile from "../hooks/useIsMobile";
 
 /* ── Design tokens ── */
 const C = {
@@ -12,11 +13,14 @@ const C = {
 };
 
 /* ── Page shell ── */
-const Page = ({ children }) => (
-  <div style={{ background:"#f1f5f9", minHeight:"100vh", padding:"32px 36px" }}>
-    {children}
-  </div>
-);
+const Page = ({ children }) => {
+  const isMobile = useIsMobile();
+  return (
+    <div style={{ background:"#f1f5f9", minHeight:"100vh", padding: isMobile ? "20px 16px" : "32px 36px" }}>
+      {children}
+    </div>
+  );
+};
 
 /* ── Page header ── */
 const PageHeader = ({ title, sub }) => (
@@ -170,13 +174,13 @@ const Dashboard = () => {
 
   return (
     <Page>
-      <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:32 }}>
+      <div style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-end", justifyContent:"space-between", gap:10, marginBottom:32 }}>
         <PageHeader title="Dashboard" sub="Manage cases, hearings and clients from one place." />
         <span style={{ fontSize:12.5, color:C.muted, paddingBottom:6 }}>{today}</span>
       </div>
 
       {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:14, marginBottom:36 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(180px,100%),1fr))", gap:14, marginBottom:36 }}>
         <StatCard label="Clients"         value={stats?.totalClients   ?? clients.length} icon={Users}         accent={C.navy}  />
         <StatCard label="Total Cases"     value={cases.length}                            icon={Briefcase}     accent={C.blue}  />
         <StatCard label="Active Cases"    value={stats?.activeCases    ?? "—"}            icon={Clock}         accent="#7c3aed" />
@@ -190,7 +194,7 @@ const Dashboard = () => {
         <SectionHeading title="Urgent Hearing Alerts" count={urgentCases.length} urgent />
         {urgentCases.length === 0
           ? <Empty text="No urgent hearings — you're all clear!" />
-          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
+          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:14 }}>
               {urgentCases.map(c => <UrgentCard key={c._id} c={c} />)}
             </div>
         }
@@ -201,7 +205,7 @@ const Dashboard = () => {
         <SectionHeading title="Upcoming Hearings" count={cases.length} />
         {cases.length === 0
           ? <Empty text="No upcoming hearings scheduled." />
-          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
+          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:14 }}>
               {cases.map(c => <HearingCard key={c._id} c={c} />)}
             </div>
         }

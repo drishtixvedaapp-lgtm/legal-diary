@@ -27,8 +27,10 @@ import ProfilePage        from "./pages/ProfilePage";
 import CauselistImport    from "./components/CauselistImport";
 import CaseBrowser        from "./components/CaseBrowser";
 import VoicePhoneAssistant from "./components/VoicePhoneAssistant";
+import useIsMobile         from "./hooks/useIsMobile";
 
 function App() {
+  const isMobile = useIsMobile();
   return (
     <BrowserRouter>
       <Routes>
@@ -60,9 +62,14 @@ function App() {
         {/* ── Lawyer dashboard — all under /dashboard ── */}
         <Route path="/dashboard/*" element={
           <ProtectedRoute>
-            <div style={{ display: "flex", background: "#f1f5f9", minHeight: "100vh" }}>
+            <div style={{ display: "flex", background: "#f1f5f9", minHeight: "100vh", maxWidth: "100vw", overflowX: "hidden" }}>
               <Sidebar />
-              <div style={{ marginLeft: 260, flex: 1, minHeight: "100vh" }}>
+              <div style={{
+                marginLeft: isMobile ? 0 : 260,
+                marginTop: isMobile ? 56 : 0,
+                flex: 1, minHeight: "100vh",
+                minWidth: 0, maxWidth: "100%",
+              }}>
                 <Routes>
                   <Route path="/"                   element={<Dashboard />} />
                   <Route path="/clients"            element={<ClientsPage />} />

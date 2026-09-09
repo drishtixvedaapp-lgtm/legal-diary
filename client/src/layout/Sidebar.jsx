@@ -1,13 +1,19 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Briefcase, CalendarDays,
   Bell, Scale, Archive, LogOut, ChevronRight, Search, Filter, Mic,
+  Menu, X,
 } from "lucide-react";
 import { isAdmin, isLawyer } from "../utils/roleHelper";
+import useIsMobile from "../hooks/useIsMobile";
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate  = useNavigate();
+  const isMobile = useIsMobile();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const closeMobile = () => { if (isMobile) setMobileOpen(false); };
 
   const menuItems = [
     { name: "Dashboard",      path: "/",              icon: LayoutDashboard },
@@ -29,16 +35,62 @@ const Sidebar = () => {
   const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
 
   return (
-    <aside style={{
-      width: 260, minHeight: "100vh", position: "fixed", left: 0, top: 0,
-      background: "#0f2744",
-      display: "flex", flexDirection: "column",
-      borderRight: "1px solid rgba(255,255,255,0.06)",
-      zIndex: 100,
-    }}>
+    <>
+      {/* Mobile top bar with hamburger — only rendered on small screens */}
+      {isMobile && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, height: 56,
+          background: "#0f2744", display: "flex", alignItems: "center", gap: 12,
+          padding: "0 12px", zIndex: 90,
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+        }}>
+          <button onClick={() => setMobileOpen(true)} aria-label="Open menu" style={{
+            width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "transparent", border: "none", color: "#fff", cursor: "pointer", flexShrink: 0,
+          }}>
+            <Menu size={22} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: 8,
+              background: "linear-gradient(135deg,#2563eb,#1d4ed8)",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <Scale size={16} color="#fff" />
+            </div>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              VakilSummons
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Backdrop behind the open drawer */}
+      {isMobile && mobileOpen && (
+        <div onClick={() => setMobileOpen(false)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 150,
+        }} />
+      )}
+
+      <aside style={{
+        width: 260, minHeight: "100vh", position: "fixed", left: 0, top: 0,
+        background: "#0f2744",
+        display: "flex", flexDirection: "column",
+        borderRight: "1px solid rgba(255,255,255,0.06)",
+        zIndex: 100,
+        ...(isMobile ? {
+          zIndex: 200,
+          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.25s ease",
+          boxShadow: mobileOpen ? "4px 0 24px rgba(0,0,0,0.35)" : "none",
+        } : {}),
+      }}>
 
       {/* Logo */}
-      <div style={{ padding: "28px 24px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+      <div style={{
+        padding: "28px 24px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
             width: 38, height: 38, borderRadius: 10,
@@ -53,6 +105,14 @@ const Sidebar = () => {
             <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>Advocate Management</p>
           </div>
         </div>
+        {isMobile && (
+          <button onClick={() => setMobileOpen(false)} aria-label="Close menu" style={{
+            width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center",
+            background: "transparent", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", flexShrink: 0,
+          }}>
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {/* Nav label */}
@@ -72,10 +132,11 @@ const Sidebar = () => {
           const active = location.pathname === fullPath;
           const Icon = item.icon;
           return (
-            <Link key={item.path} to={fullPath} style={{ textDecoration: "none" }}>
+            <Link key={item.path} to={fullPath} onClick={closeMobile} style={{ textDecoration: "none" }}>
               <div style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "10px 14px", borderRadius: 10,
+                minHeight: isMobile ? 44 : "auto",
                 background: active ? "rgba(37,99,235,0.9)" : "transparent",
                 color: active ? "#fff" : "rgba(255,255,255,0.55)",
                 transition: "all 0.15s ease",
@@ -126,6 +187,7 @@ const Sidebar = () => {
           style={{
             width: "100%", display: "flex", alignItems: "center", gap: 10,
             padding: "10px 14px", borderRadius: 10, cursor: "pointer",
+            minHeight: isMobile ? 44 : "auto",
             background: "transparent", border: "1px solid rgba(239,68,68,0.25)",
             color: "rgba(248,113,113,0.85)", fontSize: 13, fontWeight: 500,
             transition: "all 0.15s",
@@ -137,7 +199,8 @@ const Sidebar = () => {
           Sign Out
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

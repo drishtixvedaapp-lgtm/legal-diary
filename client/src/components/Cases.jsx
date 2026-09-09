@@ -4,6 +4,7 @@ import { createReminder } from "../services/notificationService";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getClients, createClient } from "../services/clientService";
 import { isAdmin } from "../utils/roleHelper";
+import useIsMobile from "../hooks/useIsMobile";
 
 // Case prefix options
 const casePrefixes = ["A","FA","RP","CC","AEA","WP","OS","CS","CRP","EP","AS","MA","SA","IA","Other"];
@@ -101,6 +102,7 @@ const RepresentsBadge = ({ side }) => {
 
 // ── Party editor ──────────────────────────────────────────────────────────────
 const PartyEditor = ({ label, parties, onChange }) => {
+  const isMobile = useIsMobile();
   const add    = () => onChange([...parties, { name:"", address:"" }]);
   const remove = (i) => onChange(parties.filter((_,idx) => idx !== i));
   const update = (i, field, val) => {
@@ -120,15 +122,15 @@ const PartyEditor = ({ label, parties, onChange }) => {
         <p style={{ fontSize:12.5, color:"#94a3b8", margin:0, fontStyle:"italic" }}>No additional parties added.</p>
       )}
       {parties.map((p, i) => (
-        <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:8, marginBottom:8, alignItems:"start" }}>
+        <div key={i} style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr auto", gap:8, marginBottom:8, alignItems:"start" }}>
           <input placeholder={`Party ${i+1} name`} value={p.name}
             onChange={e => update(i,"name",e.target.value)}
             style={inputStyle({ fontSize:13 })} {...focusHandlers} />
           <input placeholder="Address (optional)" value={p.address}
             onChange={e => update(i,"address",e.target.value)}
             style={inputStyle({ fontSize:13 })} {...focusHandlers} />
-          <button type="button" onClick={() => remove(i)} style={{ background:"#fff1f2", border:"1px solid #fecdd3", borderRadius:7, color:"#be123c", width:34, height:38, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            ×
+          <button type="button" onClick={() => remove(i)} style={{ background:"#fff1f2", border:"1px solid #fecdd3", borderRadius:7, color:"#be123c", width: isMobile ? "100%" : 34, height: isMobile ? 44 : 38, justifySelf: isMobile ? "stretch" : "auto", cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {isMobile ? "Remove" : "×"}
           </button>
         </div>
       ))}
@@ -139,6 +141,7 @@ const PartyEditor = ({ label, parties, onChange }) => {
 
 // ── Quick Add Client Modal ────────────────────────────────────────────────────
 const QuickAddClientModal = ({ onClose, onAdded }) => {
+  const isMobile = useIsMobile();
   const [form, setForm]       = useState({ name:"", phone:"", phone2:"", email:"", occupation:"", address:"" });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState("");
@@ -175,13 +178,13 @@ const QuickAddClientModal = ({ onClose, onAdded }) => {
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:16 }} onClick={onClose}>
-      <div style={{ background:"#fff", borderRadius:16, padding:28, width:"100%", maxWidth:460, boxShadow:"0 24px 60px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
+      <div style={{ background:"#fff", borderRadius:16, padding: isMobile ? 20 : 28, width:"100%", maxWidth:460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
           <h3 style={{ margin:0, fontSize:18, fontWeight:700, color:"#0f172a" }}>➕ Quick Add Client</h3>
           <button onClick={onClose} style={{ background:"#f1f5f9", border:"none", borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:18, color:"#64748b", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
         </div>
         <form onSubmit={handleSave} style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:12 }}>
             {fi("name",       "Full Name",   "text",  true)}
             {fi("phone",      "Phone",       "text",  true)}
             {fi("email",      "Email",       "email", false)}
@@ -206,6 +209,7 @@ const QuickAddClientModal = ({ onClose, onAdded }) => {
 const Cases = () => {
   const location = useLocation();
   const navigate  = useNavigate();
+  const isMobile = useIsMobile();
 
   const [editingCase,     setEditingCase]     = useState(null);
   const [search,          setSearch]          = useState("");
@@ -363,7 +367,7 @@ const Cases = () => {
 
   return (
     <div style={{ background:"#f1f5f9", minHeight:"100vh", fontFamily:"'Inter',sans-serif" }}>
-      <div style={{ maxWidth:1200, margin:"0 auto", padding:"28px 28px 60px" }}>
+      <div style={{ maxWidth:1200, margin:"0 auto", padding: isMobile ? "16px 14px 40px" : "28px 28px 60px" }}>
 
         {/* ── PAGE HEADER ── */}
         <div style={{ marginBottom:24 }}>
@@ -382,13 +386,13 @@ const Cases = () => {
         )}
 
         {/* ── FORM ── */}
-        <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", padding:"24px 28px", marginBottom:28, boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
+        <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", padding: isMobile ? "18px 16px" : "24px 28px", marginBottom:28, boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
           <h2 style={{ margin:"0 0 20px", fontSize:16, fontWeight:700, color:"#0f172a" }}>
             {editingCase ? "✏️ Edit Case" : "➕ Add New Case"}
           </h2>
 
           <form onSubmit={handleSubmit}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:16 }}>
 
               {/* Case Type */}
               <div style={{ gridColumn:"1 / -1" }}>
@@ -443,7 +447,7 @@ const Cases = () => {
 
               {/* Which side does lawyer represent */}
               <FormField label="Lawyer Represents" colSpan={2}>
-                <div style={{ display:"flex", gap:10 }}>
+                <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:10 }}>
                   {["Appellant / Petitioner / Complainant", "Respondent / Defendant / Opposite Party"].map(side => {
                     const sel = formData.lawyerRepresents === side;
                     const isApp = side.includes("Appellant");
@@ -460,12 +464,12 @@ const Cases = () => {
 
               {/* Our client (main party) */}
               <FormField label={formData.lawyerRepresents.includes("Appellant") ? "Appellant / Complainant (Main Client)" : "Respondent / Defendant (Main Client)"} hint="Optional if WhatsApp Group ID is provided">
-                <div style={{ display:"flex", gap:8 }}>
+                <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:8 }}>
                   <select name="client" value={formData.client} onChange={handleChange} style={{ ...inputStyle(), flex:1 }} {...focusHandlers}>
                     <option value="">— Select Client —</option>
                     {clients.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                   </select>
-                  <button type="button" onClick={() => setShowClientModal(true)} title="Add new client" style={{ padding:"0 16px", borderRadius:9, border:"1.5px solid #bfdbfe", background:"#eff6ff", color:"#1d4ed8", fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+                  <button type="button" onClick={() => setShowClientModal(true)} title="Add new client" style={{ padding: isMobile ? "12px 16px" : "0 16px", borderRadius:9, border:"1.5px solid #bfdbfe", background:"#eff6ff", color:"#1d4ed8", fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
                     + New Client
                   </button>
                 </div>
@@ -553,12 +557,12 @@ const Cases = () => {
         </div>
 
         {/* ── SEARCH + FILTERS ── */}
-        <div style={{ display:"flex", gap:12, marginBottom:12, alignItems:"center" }}>
+        <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:12, marginBottom:12, alignItems: isMobile ? "stretch" : "center" }}>
           <div style={{ flex:1, position:"relative" }}>
             <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", fontSize:16, color:"#94a3b8", pointerEvents:"none" }}>🔍</span>
             <input type="text" placeholder="Search by title or case number…" value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle({ paddingLeft:38, height:44, width:"100%", boxSizing:"border-box" }) }} {...focusHandlers} />
           </div>
-          <div style={{ display:"flex", gap:6 }}>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {["All","Active","Pending","Closed"].map(s => {
               const sel = statusFilter === s;
               const cfg = statusConfig[s] ?? { bg:"#1e293b", color:"#fff" };
@@ -608,7 +612,7 @@ const Cases = () => {
                   onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)"}
                   onMouseLeave={e => e.currentTarget.style.boxShadow="0 1px 4px rgba(15,23,42,0.05)"}
                 >
-                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:16 }}>
+                  <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "flex-start", justifyContent:"space-between", gap:16 }}>
                     <div style={{ flex:1, minWidth:0 }}>
 
                       {/* Badges row */}
@@ -628,7 +632,7 @@ const Cases = () => {
                       {c.forum && <p style={{ margin:"0 0 10px", fontSize:12, color:"#64748b" }}>📍 {c.forum}</p>}
 
                       {/* Parties summary */}
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 20px", marginBottom:10 }}>
+                      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"6px 20px", marginBottom:10 }}>
                         {/* Our side */}
                         <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:8, padding:"8px 12px" }}>
                           <p style={{ margin:"0 0 4px", fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#15803d" }}>
@@ -668,7 +672,12 @@ const Cases = () => {
                     </div>
 
                     {/* Action buttons */}
-                    <div style={{ display:"flex", flexDirection:"column", gap:8, flexShrink:0 }}>
+                    <div style={{
+                      display:"flex", flexDirection: isMobile ? "row" : "column",
+                      flexWrap: isMobile ? "wrap" : "nowrap",
+                      gap:8, flexShrink:0,
+                      marginTop: isMobile ? 4 : 0,
+                    }}>
                       {[
                         { label:"📖 Diary",   bg:"#f5f3ff", color:"#7c3aed", border:"#ddd6fe", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/diary`) },
                         { label:"✏️ Edit",    bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", onClick:() => handleEdit(c) },
@@ -676,7 +685,7 @@ const Cases = () => {
                         { label: reminderState[c._id]==="sending" ? "⏳ Sending…" : reminderState[c._id]==="sent" ? "✅ Reminder Set" : reminderState[c._id]==="error" ? "⚠️ Failed — Retry" : "⏰ Reminder", bg:"#fff7ed", color:"#c2410c", border:"#fed7aa", onClick:() => handleReminder(c), disabled: reminderState[c._id]==="sending" },
                         { label:"⚖️ Outcome", bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/outcome`) },
                       ].map(({ label, bg, color, border, onClick, disabled }) => (
-                        <button key={label} onClick={onClick} disabled={disabled} style={{ display:"inline-flex", alignItems:"center", gap:6, background:bg, color, border:`1.5px solid ${border}`, borderRadius:9, padding:"8px 14px", fontSize:13, fontWeight:600, cursor: disabled ? "not-allowed" : "pointer", fontFamily:"inherit", transition:"all 0.15s", opacity: disabled ? 0.6 : 1 }}>
+                        <button key={label} onClick={onClick} disabled={disabled} style={{ display:"inline-flex", alignItems:"center", gap:6, background:bg, color, border:`1.5px solid ${border}`, borderRadius:9, padding: isMobile ? "10px 14px" : "8px 14px", minHeight: isMobile ? 44 : "auto", fontSize:13, fontWeight:600, cursor: disabled ? "not-allowed" : "pointer", fontFamily:"inherit", transition:"all 0.15s", opacity: disabled ? 0.6 : 1 }}>
                           {label}
                         </button>
                       ))}
