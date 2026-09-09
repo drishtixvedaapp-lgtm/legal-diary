@@ -184,10 +184,11 @@ const GLOBAL_CSS = `
     border-radius: var(--radius-lg);
     padding: 28px;
     box-shadow: var(--shadow-sm);
+    min-width: 0;
   }
 
   /* ── Layout Grid ── */
-  .dh-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .dh-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; min-width: 0; }
   @media(max-width:900px){ .dh-grid-2 { grid-template-columns: 1fr; } }
 
   /* ── Stage Progress ── */

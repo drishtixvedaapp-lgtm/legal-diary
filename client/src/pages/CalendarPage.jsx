@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCases } from "../services/caseService";
 import { createNote } from "../services/caseNoteService";
 import { isAdmin } from "../utils/roleHelper";
+import useIsMobile from "../hooks/useIsMobile";
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
@@ -197,6 +198,7 @@ const CalendarGrid = ({ viewYear, viewMonth, selectedDate, today, hearingDates, 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 const CalendarPage = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [cases,        setCases]        = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewYear,     setViewYear]     = useState(new Date().getFullYear());
@@ -222,7 +224,7 @@ const CalendarPage = () => {
   return (
     <div style={{
       fontFamily:"'DM Sans',sans-serif", background:"#0f1f3d",
-      color:"#fff", minHeight:"100vh", padding:"24px 28px",
+      color:"#fff", minHeight:"100vh", padding: isMobile ? "18px 14px" : "24px 28px",
     }}>
       {showModal && (
         <NoteModal
@@ -246,7 +248,7 @@ const CalendarPage = () => {
       )}
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:24, paddingBottom:18, borderBottom:"1px solid rgba(201,168,76,0.15)" }}>
+      <div style={{ display:"flex", flexWrap:"wrap", alignItems:"flex-end", justifyContent:"space-between", gap:12, marginBottom:24, paddingBottom:18, borderBottom:"1px solid rgba(201,168,76,0.15)" }}>
         <div>
           <p style={{ margin:0, fontSize:11, letterSpacing:"0.12em", textTransform:"uppercase", color:"#c9a84c", marginBottom:4 }}>Case Management</p>
           <h1 style={{ margin:0, fontSize:26, fontWeight:700, color:"#fff", letterSpacing:"-0.3px" }}>Hearing Calendar</h1>
@@ -261,7 +263,7 @@ const CalendarPage = () => {
       </div>
 
       {/* Main grid */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 280px", gap:18, marginBottom:24 }}>
+      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 280px", gap:18, marginBottom:24 }}>
 
         {/* Calendar */}
         <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(201,168,76,0.15)", borderRadius:14, padding:18 }}>
@@ -341,7 +343,7 @@ const CalendarPage = () => {
             No upcoming hearings found
           </div>
         ) : (
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(240px,100%),1fr))", gap:12 }}>
             {upcoming.map(c => (
               <div key={c._id} style={{
                 background:"rgba(255,255,255,0.03)", border:"1px solid rgba(201,168,76,0.15)",

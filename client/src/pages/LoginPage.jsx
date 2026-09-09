@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../services/authService";
 import { Scale, Mail, Lock, ArrowRight, Shield } from "lucide-react";
+import useIsMobile from "../hooks/useIsMobile";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [focused, setFocused]   = useState(null);
   const [loading, setLoading]   = useState(false);
@@ -24,13 +26,13 @@ const LoginPage = () => {
   };
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", fontFamily:"'Inter',sans-serif" }}>
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection: isMobile ? "column" : "row", fontFamily:"'Inter',sans-serif" }}>
       {/* Left panel */}
       <div style={{
-        flex:"0 0 420px", background:"linear-gradient(160deg,#0f2744 0%,#0a1c38 55%,#071428 100%)",
+        flex: isMobile ? "0 0 auto" : "0 0 420px", background:"linear-gradient(160deg,#0f2744 0%,#0a1c38 55%,#071428 100%)",
         display:"flex", alignItems:"center", justifyContent:"center",
-        padding:"60px 48px", position:"relative", overflow:"hidden",
-        opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateX(-20px)",
+        padding: isMobile ? "40px 24px" : "60px 48px", position:"relative", overflow:"hidden",
+        opacity: mounted ? 1 : 0, transform: mounted ? "none" : (isMobile ? "translateY(-16px)" : "translateX(-20px)"),
         transition:"opacity 0.5s ease, transform 0.5s ease",
       }}>
         {/* Background circles */}
@@ -66,7 +68,7 @@ const LoginPage = () => {
       {/* Right panel */}
       <div style={{
         flex:1, display:"flex", alignItems:"center", justifyContent:"center",
-        background:"#fff", padding:"48px 40px",
+        background:"#fff", padding: isMobile ? "40px 24px 48px" : "48px 40px",
         opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(16px)",
         transition:"opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s",
       }}>
