@@ -108,7 +108,7 @@ const CaseBrowser = () => {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {cases.map(c => (
-            <Link key={c._id} to={`/dashboard/cases/${c._id}/diary`} style={{ textDecoration: "none" }}>
+            <Link key={c._id} to={`/dashboard/cases?edit=${c._id}`} style={{ textDecoration: "none" }}>
               <div style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 10, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>

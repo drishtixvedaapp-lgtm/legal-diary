@@ -84,7 +84,8 @@ async (id) => {
 
   const response =
     await API.get(
-      `/cases/${id}`
+      `/cases/${id}`,
+      getToken()
     );
 
   return response.data;

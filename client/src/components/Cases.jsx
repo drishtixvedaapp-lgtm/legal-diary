@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useCallback, memo } from "react";
-import { getCases, createCase, updateCase, deleteCase, checkCaseNumber } from "../services/caseService";
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from "react";
+import { getCases, createCase, updateCase, deleteCase, checkCaseNumber, getCaseById } from "../services/caseService";
 import { createReminder } from "../services/notificationService";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getClients, createClient } from "../services/clientService";
@@ -397,6 +397,27 @@ const Cases = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  // Deep-link support: /dashboard/cases?edit=<caseId> opens straight into
+  // the edit form for that case (used by Case Browser's "fix this case"
+  // links), instead of making the user search for it again.
+  const handledEditParam = useRef(null);
+  useEffect(() => {
+    const editId = new URLSearchParams(location.search).get("edit");
+    if (!editId || handledEditParam.current === editId) return;
+    handledEditParam.current = editId;
+
+    const alreadyLoaded = cases.find(c => c._id === editId);
+    const openIt = (c) => {
+      handleEdit(c);
+      navigate(location.pathname, { replace: true });
+    };
+    if (alreadyLoaded) {
+      openIt(alreadyLoaded);
+    } else {
+      getCaseById(editId).then(openIt).catch(e => console.error("Failed to load case for edit link:", e));
+    }
+  }, [cases, location.search, location.pathname, handleEdit, navigate]);
+
   const handleDelete = useCallback(async (id) => {
     if (!window.confirm("Delete this case and all its data?")) return;
     setDeletingId(id);
@@ -704,9 +725,19 @@ const Cases = () => {
         {filtered.length === 0 ? (
           <div style={{ background:"#fff", borderRadius:18, border:"1px solid #e2e8f0", padding:"52px 24px", textAlign:"center" }}>
             <div style={{ fontSize:38, marginBottom:10 }}>🗂️</div>
-            <p style={{ margin:0, fontWeight:700, color:"#475569" }}>No cases found</p>
+            <p style={{ margin:0, fontWeight:700, color:"#475569" }}>
+              {search.trim()
+                ? "No cases match your search"
+                : (statusFilter !== "All" || caseTypeFilter !== "All")
+                  ? "No cases match these filters"
+                  : "No cases yet"}
+            </p>
             <p style={{ margin:"4px 0 0", color:"#94a3b8", fontSize:13 }}>
-              {search ? "Try a different search term." : "Add your first case using the form above."}
+              {search.trim()
+                ? `No case titled or numbered "${search.trim()}" was found among all ${cases.length} of your cases — this searched everything, not just the current page. Double-check the spelling, or clear the search before adding a new case to avoid creating a duplicate.`
+                : (statusFilter !== "All" || caseTypeFilter !== "All")
+                  ? "Try clearing the status or case-type filter above."
+                  : "Add your first case using the form above."}
             </p>
           </div>
         ) : (
