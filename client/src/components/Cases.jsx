@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { getCases, createCase, updateCase, deleteCase, checkCaseNumber } from "../services/caseService";
 import { createReminder } from "../services/notificationService";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -32,6 +32,8 @@ const statusConfig = {
   "Pending": { bg:"#fef9c3", color:"#854d0e", dot:"#ca8a04" },
   "Closed":  { bg:"#f1f5f9", color:"#475569", dot:"#94a3b8" },
 };
+
+const PAGE_SIZE = 24;
 
 // ── Default form ──────────────────────────────────────────────────────────────
 const defaultForm = {
@@ -205,6 +207,103 @@ const QuickAddClientModal = ({ onClose, onAdded }) => {
   );
 };
 
+// ── Case card ─────────────────────────────────────────────────────────────────
+// Memoized so unrelated Cases state (form edits, editingCase, typing in the
+// case-number field) doesn't force every card in a large list to re-render —
+// only the props of a given card need to change for it to re-render.
+const CaseCard = memo(({ c, isMobile, isDeleting, reminderStatus, onEdit, onDelete, onReminder, navigate }) => {
+  const isAppellant = c.lawyerRepresents?.includes("Appellant");
+  const opposites   = c.oppositeParties?.filter(p => p.name) ?? [];
+  const ourExtra    = c.ourParties?.filter(p => p.name) ?? [];
+
+  return (
+    <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", padding:"20px 22px 18px", boxShadow:"0 1px 4px rgba(15,23,42,0.05)", transition:"box-shadow 0.2s" }}
+      onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)"}
+      onMouseLeave={e => e.currentTarget.style.boxShadow="0 1px 4px rgba(15,23,42,0.05)"}
+    >
+      <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "flex-start", justifyContent:"space-between", gap:16 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+
+          {/* Badges row */}
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:7, marginBottom:6 }}>
+            <span style={{ fontSize:12, fontWeight:700, color:"#0369a1", background:"#e0f2fe", padding:"3px 10px", borderRadius:6, letterSpacing:"0.04em" }}>
+              {c.casePrefix}/{c.caseNumber}
+            </span>
+            <StatusBadge status={c.status} />
+            {c.caseType && <CaseTypeBadge caseType={c.caseType} />}
+            {c.lawyerRepresents && <RepresentsBadge side={c.lawyerRepresents} />}
+          </div>
+
+          {/* Title */}
+          <h2 style={{ margin:"0 0 4px", fontSize:16.5, fontWeight:700, color:"#0f172a", letterSpacing:"-0.02em" }}>{c.caseTitle}</h2>
+
+          {/* Forum */}
+          {c.forum && <p style={{ margin:"0 0 10px", fontSize:12, color:"#64748b" }}>📍 {c.forum}</p>}
+
+          {/* Parties summary */}
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"6px 20px", marginBottom:10 }}>
+            {/* Our side */}
+            <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:8, padding:"8px 12px" }}>
+              <p style={{ margin:"0 0 4px", fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#15803d" }}>
+                {isAppellant ? "Appellant / Complainant" : "Respondent / Defendant"}
+              </p>
+              <p style={{ margin:0, fontSize:13, fontWeight:600, color:"#0f172a" }}>{c.client?.name || "—"}</p>
+              {ourExtra.map((p,i) => <p key={i} style={{ margin:"2px 0 0", fontSize:12, color:"#475569" }}>{i+1+1}. {p.name}</p>)}
+            </div>
+            {/* Opposite side */}
+            <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"8px 12px" }}>
+              <p style={{ margin:"0 0 4px", fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#b91c1c" }}>
+                {isAppellant ? "Respondent / Opposite Party" : "Appellant / Complainant"}
+              </p>
+              {opposites.length === 0
+                ? <p style={{ margin:0, fontSize:13, color:"#94a3b8", fontStyle:"italic" }}>Not entered</p>
+                : opposites.map((p,i) => <p key={i} style={{ margin: i===0 ? 0 : "2px 0 0", fontSize:13, fontWeight: i===0 ? 600 : 400, color:"#0f172a" }}>{opposites.length > 1 ? `${i+1}. ` : ""}{p.name}</p>)
+              }
+              {c.oppositeCounsel && <p style={{ margin:"4px 0 0", fontSize:11, color:"#64748b" }}>Counsel: {c.oppositeCounsel}</p>}
+            </div>
+          </div>
+
+          {/* Meta row */}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:"6px 20px" }}>
+            {[
+              { icon:"🏛️", label:"Court",   val: c.courtName },
+              { icon:"📅", label:"Hearing", val: new Date(c.nextHearing).toLocaleDateString("en-IN",{ day:"numeric", month:"short", year:"numeric" }) },
+              { icon:"🕐", label:"Time",    val: c.hearingTime },
+              { icon:"📋", label:"Stage",   val: c.stage },
+            ].filter(m => m.val).map(({ icon, label, val }) => (
+              <div key={label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                <span style={{ fontSize:13 }}>{icon}</span>
+                <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, marginRight:2 }}>{label}:</span>
+                <span style={{ fontSize:13, color:"#334155", fontWeight:500 }}>{val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div style={{
+          display:"flex", flexDirection: isMobile ? "row" : "column",
+          flexWrap: isMobile ? "wrap" : "nowrap",
+          gap:8, flexShrink:0,
+          marginTop: isMobile ? 4 : 0,
+        }}>
+          {[
+            { label:"📖 Diary",   bg:"#f5f3ff", color:"#7c3aed", border:"#ddd6fe", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/diary`) },
+            { label:"✏️ Edit",    bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", onClick:() => onEdit(c) },
+            { label:`🗑 ${isDeleting?"…":"Delete"}`, bg:"#fff1f2", color:"#be123c", border:"#fecdd3", onClick:() => onDelete(c._id), disabled: isDeleting },
+            { label: reminderStatus==="sending" ? "⏳ Sending…" : reminderStatus==="sent" ? "✅ Reminder Set" : reminderStatus==="error" ? "⚠️ Failed — Retry" : "⏰ Reminder", bg:"#fff7ed", color:"#c2410c", border:"#fed7aa", onClick:() => onReminder(c), disabled: reminderStatus==="sending" },
+            { label:"⚖️ Outcome", bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/outcome`) },
+          ].map(({ label, bg, color, border, onClick, disabled }) => (
+            <button key={label} onClick={onClick} disabled={disabled} style={{ display:"inline-flex", alignItems:"center", gap:6, background:bg, color, border:`1.5px solid ${border}`, borderRadius:9, padding: isMobile ? "10px 14px" : "8px 14px", minHeight: isMobile ? 44 : "auto", fontSize:13, fontWeight:600, cursor: disabled ? "not-allowed" : "pointer", fontFamily:"inherit", transition:"all 0.15s", opacity: disabled ? 0.6 : 1 }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 // ── Main Component ────────────────────────────────────────────────────────────
 const Cases = () => {
   const location = useLocation();
@@ -223,6 +322,7 @@ const Cases = () => {
   const [formData,        setFormData]        = useState(defaultForm);
   const [showClientModal, setShowClientModal] = useState(false);
   const [dupCheck,        setDupCheck]        = useState({ checking:false, exists:false, caseTitle:null });
+  const [page,            setPage]            = useState(1);
 
   // Pre-fill date from calendar
   useEffect(() => {
@@ -232,11 +332,11 @@ const Cases = () => {
     }
   }, [location]);
 
-  const fetchAll = async () => {
+  const fetchAll = useCallback(async () => {
     try { setCases(await getCases()); }   catch(e){ console.error(e); }
     try { setClients(await getClients()); } catch(e){ console.error(e); }
-  };
-  useEffect(() => { fetchAll(); }, []);
+  }, []);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const handleClientAdded = (newClient) => {
     setClients(prev => [newClient, ...prev]);
@@ -274,7 +374,7 @@ const Cases = () => {
 
   const resetForm = () => setFormData(defaultForm);
 
-  const handleEdit = (c) => {
+  const handleEdit = useCallback((c) => {
     setEditingCase(c);
     setFormData({
       casePrefix:       c.casePrefix       || "A",
@@ -295,16 +395,16 @@ const Cases = () => {
       status:           c.status           || "Active",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm("Delete this case and all its data?")) return;
     setDeletingId(id);
     try { await deleteCase(id); await fetchAll(); } catch(e){ alert("Delete failed"); }
     finally { setDeletingId(null); }
-  };
+  }, [fetchAll]);
 
-  const handleReminder = async (c) => {
+  const handleReminder = useCallback(async (c) => {
     if (!c.nextHearing) { alert("This case has no hearing date set, so a reminder can't be scheduled."); return; }
     setReminderState(prev => ({ ...prev, [c._id]: "sending" }));
     try {
@@ -317,7 +417,7 @@ const Cases = () => {
       return;
     }
     setTimeout(() => setReminderState(prev => ({ ...prev, [c._id]: undefined })), 3000);
-  };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -357,13 +457,20 @@ const Cases = () => {
     } finally { setSubmitting(false); }
   };
 
-  const filtered = cases.filter(c => {
+  const filtered = useMemo(() => cases.filter(c => {
     const q = search.toLowerCase();
     const matchSearch = c.caseTitle?.toLowerCase().includes(q) || c.caseNumber?.toLowerCase().includes(q);
     const matchStatus = statusFilter === "All" || c.status === statusFilter;
     const matchType   = caseTypeFilter === "All" || c.caseType === caseTypeFilter;
     return matchSearch && matchStatus && matchType;
-  });
+  }), [cases, search, statusFilter, caseTypeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage]
+  );
 
   return (
     <div style={{ background:"#f1f5f9", minHeight:"100vh", fontFamily:"'Inter',sans-serif" }}>
@@ -560,14 +667,14 @@ const Cases = () => {
         <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", gap:12, marginBottom:12, alignItems: isMobile ? "stretch" : "center" }}>
           <div style={{ flex:1, position:"relative" }}>
             <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", fontSize:16, color:"#94a3b8", pointerEvents:"none" }}>🔍</span>
-            <input type="text" placeholder="Search by title or case number…" value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle({ paddingLeft:38, height:44, width:"100%", boxSizing:"border-box" }) }} {...focusHandlers} />
+            <input type="text" placeholder="Search by title or case number…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} style={{ ...inputStyle({ paddingLeft:38, height:44, width:"100%", boxSizing:"border-box" }) }} {...focusHandlers} />
           </div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {["All","Active","Pending","Closed"].map(s => {
               const sel = statusFilter === s;
               const cfg = statusConfig[s] ?? { bg:"#1e293b", color:"#fff" };
               return (
-                <button key={s} onClick={() => setStatusFilter(s)} style={{ padding:"9px 16px", borderRadius:9, fontSize:13, fontWeight:600, border: sel ? "none" : "1.5px solid #e2e8f0", background: sel ? (s==="All" ? "#1e293b" : cfg.bg) : "#fff", color: sel ? (s==="All" ? "#fff" : cfg.color) : "#64748b", cursor:"pointer", fontFamily:"inherit" }}>
+                <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }} style={{ padding:"9px 16px", borderRadius:9, fontSize:13, fontWeight:600, border: sel ? "none" : "1.5px solid #e2e8f0", background: sel ? (s==="All" ? "#1e293b" : cfg.bg) : "#fff", color: sel ? (s==="All" ? "#fff" : cfg.color) : "#64748b", cursor:"pointer", fontFamily:"inherit" }}>
                   {s}
                 </button>
               );
@@ -580,7 +687,7 @@ const Cases = () => {
           {["All", ...caseTypes].map(t => {
             const sel = caseTypeFilter === t;
             return (
-              <button key={t} onClick={() => setCaseTypeFilter(t)} style={{ padding:"7px 14px", borderRadius:9, fontSize:12.5, fontWeight:600, border: sel ? "none" : "1.5px solid #e2e8f0", background: sel ? "#0369a1" : "#fff", color: sel ? "#fff" : "#64748b", cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", flexShrink:0 }}>
+              <button key={t} onClick={() => { setCaseTypeFilter(t); setPage(1); }} style={{ padding:"7px 14px", borderRadius:9, fontSize:12.5, fontWeight:600, border: sel ? "none" : "1.5px solid #e2e8f0", background: sel ? "#0369a1" : "#fff", color: sel ? "#fff" : "#64748b", cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", flexShrink:0 }}>
                 {t !== "All" ? `${caseTypeIcons[t]} ` : ""}{t}
               </button>
             );
@@ -588,7 +695,9 @@ const Cases = () => {
         </div>
 
         <p style={{ fontSize:12.5, color:"#94a3b8", marginBottom:14, fontWeight:500 }}>
-          Showing {filtered.length} of {cases.length} case{cases.length !== 1 ? "s" : ""}
+          {filtered.length === 0
+            ? `Showing 0 of ${cases.length} case${cases.length !== 1 ? "s" : ""}`
+            : `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, filtered.length)} of ${filtered.length} case${filtered.length !== 1 ? "s" : ""}`}
         </p>
 
         {/* ── CASE CARDS ── */}
@@ -601,100 +710,48 @@ const Cases = () => {
             </p>
           </div>
         ) : (
-          <div style={{ display:"grid", gap:14 }}>
-            {filtered.map((c) => {
-              const isAppellant = c.lawyerRepresents?.includes("Appellant");
-              const opposites   = c.oppositeParties?.filter(p => p.name) ?? [];
-              const ourExtra    = c.ourParties?.filter(p => p.name) ?? [];
+          <>
+            <div style={{ display:"grid", gap:14 }}>
+              {paginated.map((c) => (
+                <CaseCard
+                  key={c._id}
+                  c={c}
+                  isMobile={isMobile}
+                  isDeleting={deletingId === c._id}
+                  reminderStatus={reminderState[c._id]}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onReminder={handleReminder}
+                  navigate={navigate}
+                />
+              ))}
+            </div>
 
-              return (
-                <div key={c._id} style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", padding:"20px 22px 18px", boxShadow:"0 1px 4px rgba(15,23,42,0.05)", transition:"box-shadow 0.2s" }}
-                  onMouseEnter={e => e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)"}
-                  onMouseLeave={e => e.currentTarget.style.boxShadow="0 1px 4px rgba(15,23,42,0.05)"}
+            {/* ── PAGINATION ── */}
+            {totalPages > 1 && (
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:16, marginTop:24 }}>
+                <button
+                  type="button"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{ padding:"9px 18px", borderRadius:9, fontSize:13, fontWeight:600, border:"1.5px solid #e2e8f0", background:"#fff", color: currentPage === 1 ? "#cbd5e1" : "#334155", cursor: currentPage === 1 ? "not-allowed" : "pointer", fontFamily:"inherit" }}
                 >
-                  <div style={{ display:"flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "flex-start", justifyContent:"space-between", gap:16 }}>
-                    <div style={{ flex:1, minWidth:0 }}>
-
-                      {/* Badges row */}
-                      <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:7, marginBottom:6 }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:"#0369a1", background:"#e0f2fe", padding:"3px 10px", borderRadius:6, letterSpacing:"0.04em" }}>
-                          {c.casePrefix}/{c.caseNumber}
-                        </span>
-                        <StatusBadge status={c.status} />
-                        {c.caseType && <CaseTypeBadge caseType={c.caseType} />}
-                        {c.lawyerRepresents && <RepresentsBadge side={c.lawyerRepresents} />}
-                      </div>
-
-                      {/* Title */}
-                      <h2 style={{ margin:"0 0 4px", fontSize:16.5, fontWeight:700, color:"#0f172a", letterSpacing:"-0.02em" }}>{c.caseTitle}</h2>
-
-                      {/* Forum */}
-                      {c.forum && <p style={{ margin:"0 0 10px", fontSize:12, color:"#64748b" }}>📍 {c.forum}</p>}
-
-                      {/* Parties summary */}
-                      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"6px 20px", marginBottom:10 }}>
-                        {/* Our side */}
-                        <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:8, padding:"8px 12px" }}>
-                          <p style={{ margin:"0 0 4px", fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#15803d" }}>
-                            {isAppellant ? "Appellant / Complainant" : "Respondent / Defendant"}
-                          </p>
-                          <p style={{ margin:0, fontSize:13, fontWeight:600, color:"#0f172a" }}>{c.client?.name || "—"}</p>
-                          {ourExtra.map((p,i) => <p key={i} style={{ margin:"2px 0 0", fontSize:12, color:"#475569" }}>{i+1+1}. {p.name}</p>)}
-                        </div>
-                        {/* Opposite side */}
-                        <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"8px 12px" }}>
-                          <p style={{ margin:"0 0 4px", fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#b91c1c" }}>
-                            {isAppellant ? "Respondent / Opposite Party" : "Appellant / Complainant"}
-                          </p>
-                          {opposites.length === 0
-                            ? <p style={{ margin:0, fontSize:13, color:"#94a3b8", fontStyle:"italic" }}>Not entered</p>
-                            : opposites.map((p,i) => <p key={i} style={{ margin: i===0 ? 0 : "2px 0 0", fontSize:13, fontWeight: i===0 ? 600 : 400, color:"#0f172a" }}>{opposites.length > 1 ? `${i+1}. ` : ""}{p.name}</p>)
-                          }
-                          {c.oppositeCounsel && <p style={{ margin:"4px 0 0", fontSize:11, color:"#64748b" }}>Counsel: {c.oppositeCounsel}</p>}
-                        </div>
-                      </div>
-
-                      {/* Meta row */}
-                      <div style={{ display:"flex", flexWrap:"wrap", gap:"6px 20px" }}>
-                        {[
-                          { icon:"🏛️", label:"Court",   val: c.courtName },
-                          { icon:"📅", label:"Hearing", val: new Date(c.nextHearing).toLocaleDateString("en-IN",{ day:"numeric", month:"short", year:"numeric" }) },
-                          { icon:"🕐", label:"Time",    val: c.hearingTime },
-                          { icon:"📋", label:"Stage",   val: c.stage },
-                        ].filter(m => m.val).map(({ icon, label, val }) => (
-                          <div key={label} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                            <span style={{ fontSize:13 }}>{icon}</span>
-                            <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, marginRight:2 }}>{label}:</span>
-                            <span style={{ fontSize:13, color:"#334155", fontWeight:500 }}>{val}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div style={{
-                      display:"flex", flexDirection: isMobile ? "row" : "column",
-                      flexWrap: isMobile ? "wrap" : "nowrap",
-                      gap:8, flexShrink:0,
-                      marginTop: isMobile ? 4 : 0,
-                    }}>
-                      {[
-                        { label:"📖 Diary",   bg:"#f5f3ff", color:"#7c3aed", border:"#ddd6fe", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/diary`) },
-                        { label:"✏️ Edit",    bg:"#eff6ff", color:"#1d4ed8", border:"#bfdbfe", onClick:() => handleEdit(c) },
-                        { label:`🗑 ${deletingId===c._id?"…":"Delete"}`, bg:"#fff1f2", color:"#be123c", border:"#fecdd3", onClick:() => handleDelete(c._id), disabled: deletingId===c._id },
-                        { label: reminderState[c._id]==="sending" ? "⏳ Sending…" : reminderState[c._id]==="sent" ? "✅ Reminder Set" : reminderState[c._id]==="error" ? "⚠️ Failed — Retry" : "⏰ Reminder", bg:"#fff7ed", color:"#c2410c", border:"#fed7aa", onClick:() => handleReminder(c), disabled: reminderState[c._id]==="sending" },
-                        { label:"⚖️ Outcome", bg:"#ecfdf5", color:"#059669", border:"#a7f3d0", onClick:() => navigate(`${isAdmin() ? "/admin" : "/dashboard"}/cases/${c._id}/outcome`) },
-                      ].map(({ label, bg, color, border, onClick, disabled }) => (
-                        <button key={label} onClick={onClick} disabled={disabled} style={{ display:"inline-flex", alignItems:"center", gap:6, background:bg, color, border:`1.5px solid ${border}`, borderRadius:9, padding: isMobile ? "10px 14px" : "8px 14px", minHeight: isMobile ? 44 : "auto", fontSize:13, fontWeight:600, cursor: disabled ? "not-allowed" : "pointer", fontFamily:"inherit", transition:"all 0.15s", opacity: disabled ? 0.6 : 1 }}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  ← Previous
+                </button>
+                <span style={{ fontSize:13, color:"#64748b", fontWeight:600 }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  style={{ padding:"9px 18px", borderRadius:9, fontSize:13, fontWeight:600, border:"1.5px solid #e2e8f0", background:"#fff", color: currentPage === totalPages ? "#cbd5e1" : "#334155", cursor: currentPage === totalPages ? "not-allowed" : "pointer", fontFamily:"inherit" }}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
