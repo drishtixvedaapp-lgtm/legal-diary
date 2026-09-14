@@ -59,3 +59,31 @@ export const logoutUser = () => {
     "userInfo"
   );
 };
+
+// FORGOT PASSWORD
+
+export const forgotPassword =
+  async (email) => {
+
+    const response =
+      await API.post(
+        "/auth/forgot-password",
+        { email }
+      );
+
+    return response.data;
+};
+
+// RESET PASSWORD
+
+export const resetPassword =
+  async ({ token, newPassword }) => {
+
+    const response =
+      await API.post(
+        "/auth/reset-password",
+        { token, newPassword }
+      );
+
+    return response.data;
+};

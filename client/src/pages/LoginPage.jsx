@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { loginUser } from "../services/authService";
-import { Scale, Mail, Lock, ArrowRight, Shield } from "lucide-react";
+import { Scale, Mail, Lock, ArrowRight, Shield, CheckCircle2 } from "lucide-react";
 import useIsMobile from "../hooks/useIsMobile";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [focused, setFocused]   = useState(null);
   const [loading, setLoading]   = useState(false);
   const [mounted, setMounted]   = useState(false);
+  const successMessage          = location.state?.message;
 
   useEffect(() => { setTimeout(() => setMounted(true), 50); }, []);
 
@@ -79,6 +81,17 @@ const LoginPage = () => {
                        letterSpacing:"-0.5px", fontFamily:"'Playfair Display',Georgia,serif" }}>Sign In</h2>
           <p style={{ margin:"0 0 36px", fontSize:13.5, color:"#94a3b8" }}>Access your case dashboard</p>
 
+          {successMessage && (
+            <div style={{
+              display:"flex", alignItems:"flex-start", gap:8, marginBottom:24,
+              background:"#ecfdf5", border:"1px solid #a7f3d0",
+              borderRadius:10, padding:"10px 12px",
+            }}>
+              <CheckCircle2 size={15} color="#047857" style={{ flexShrink:0, marginTop:1 }} />
+              <p style={{ margin:0, fontSize:13, color:"#047857", lineHeight:1.6 }}>{successMessage}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:20 }}>
             <Field label="Email Address" name="email" type="email" icon={Mail}
               placeholder="you@lawfirm.com" value={formData.email}
@@ -88,6 +101,13 @@ const LoginPage = () => {
               placeholder="••••••••" value={formData.password}
               focused={focused==="password"} onFocus={()=>setFocused("password")} onBlur={()=>setFocused(null)}
               onChange={e=>setFormData({...formData,password:e.target.value})} />
+
+            <Link to="/forgot-password" style={{
+              alignSelf:"flex-end", marginTop:-10, fontSize:12.5, fontWeight:600,
+              color:"#2563eb", textDecoration:"none",
+            }}>
+              Forgot password?
+            </Link>
 
             <button type="submit" disabled={loading}
               style={{

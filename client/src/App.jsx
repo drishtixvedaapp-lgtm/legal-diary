@@ -16,6 +16,8 @@ import CalendarPage       from "./pages/CalendarPage";
 import NotificationsPage  from "./pages/NotificationsPage";
 import LoginPage          from "./pages/LoginPage";
 import RegisterPage       from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage  from "./pages/ResetPasswordPage";
 import ProtectedRoute     from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminDashboard     from "./pages/AdminDashboard";
@@ -43,6 +45,8 @@ function App() {
         <Route path="/register"         element={<RegisterPage />} />
         <Route path="/verify-otp"       element={<VerifyOtpPage />} />
         <Route path="/verify-login-otp" element={<VerifyLoginOtpPage />} />
+        <Route path="/forgot-password"       element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* ── Admin panel — requires login AND admin role ── */}
         <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
