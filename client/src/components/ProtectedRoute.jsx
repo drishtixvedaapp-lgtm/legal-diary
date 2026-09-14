@@ -1,4 +1,6 @@
 import { Navigate } from "react-router-dom";
+import useIdleTimeout from "../hooks/useIdleTimeout";
+import IdleTimeoutWarning from "./IdleTimeoutWarning";
 
 const ProtectedRoute = ({ children }) => {
 
@@ -6,9 +8,16 @@ const ProtectedRoute = ({ children }) => {
     localStorage.getItem("userInfo")
   );
 
-  return userInfo
-    ? children
-    : <Navigate to="/login" />;
+  const { showWarning, staySignedIn } = useIdleTimeout(!!userInfo);
+
+  if (!userInfo) return <Navigate to="/login" />;
+
+  return (
+    <>
+      {children}
+      {showWarning && <IdleTimeoutWarning onStay={staySignedIn} />}
+    </>
+  );
 };
 
 export default ProtectedRoute;
