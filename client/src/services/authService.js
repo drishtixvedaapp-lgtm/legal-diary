@@ -87,3 +87,31 @@ export const resetPassword =
 
     return response.data;
 };
+
+// INVITE A JUNIOR LAWYER — requires auth; API attaches the token automatically (see services/api.js)
+
+export const inviteLawyer =
+  async ({ name, email }) => {
+
+    const response =
+      await API.post(
+        "/auth/invite-lawyer",
+        { name, email }
+      );
+
+    return response.data;
+};
+
+// ACCEPT INVITE
+
+export const acceptInvite =
+  async ({ token, password }) => {
+
+    const response =
+      await API.post(
+        "/auth/accept-invite",
+        { token, password }
+      );
+
+    return response.data;
+};

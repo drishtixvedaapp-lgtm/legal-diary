@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { User, Phone, Mail, Lock, Save, CheckCircle, AlertCircle } from "lucide-react";
+import { User, Phone, Mail, Lock, Save, CheckCircle, AlertCircle, UserPlus, Send } from "lucide-react";
 import API from "../services/api";
+import { inviteLawyer } from "../services/authService";
 
 const ProfilePage = () => {
   const [profile,  setProfile]  = useState({ name:"", email:"", phone:"", role:"" });
   const [passForm, setPassForm] = useState({ currentPassword:"", newPassword:"", confirmPassword:"" });
+  const [inviteForm, setInviteForm] = useState({ name:"", email:"" });
   const [saving,   setSaving]   = useState(false);
   const [changing, setChanging] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [toast,    setToast]    = useState(null); // { type: "success"|"error", msg }
 
   const showToast = (type, msg) => {
@@ -64,6 +67,18 @@ const ProfilePage = () => {
     } catch(err) {
       showToast("error", err.response?.data?.message || "Failed to change password");
     } finally { setChanging(false); }
+  };
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    setInviting(true);
+    try {
+      const res = await inviteLawyer(inviteForm);
+      showToast("success", res.message || `Invite sent to ${inviteForm.email}`);
+      setInviteForm({ name:"", email:"" });
+    } catch(err) {
+      showToast("error", err.response?.data?.message || "Failed to send invite");
+    } finally { setInviting(false); }
   };
 
   // Avatar initials
@@ -248,6 +263,62 @@ const ProfilePage = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* ── Invite a Junior Lawyer Card ── */}
+      <div style={{ background:"#fff", borderRadius:16, border:"1px solid #e2e8f0", padding:"28px", boxShadow:"0 1px 4px rgba(0,0,0,0.05)", maxWidth:900, marginTop:20 }}>
+
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:24, paddingBottom:16, borderBottom:"1px solid #f1f5f9" }}>
+          <div style={{ width:36, height:36, borderRadius:10, background:"#eff6ff", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <UserPlus size={17} color="#2563eb" />
+          </div>
+          <div>
+            <p style={{ margin:0, fontSize:15, fontWeight:700, color:"#0f172a" }}>Invite a Junior Lawyer</p>
+            <p style={{ margin:0, fontSize:12, color:"#94a3b8" }}>Send an email invite so they can set up their own account</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleInvite} style={{ display:"flex", gap:16, alignItems:"flex-end", flexWrap:"wrap" }}>
+
+          <div style={{ flex:"1 1 220px" }}>
+            <label style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#64748b", display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+              <User size={13} /> Full Name
+            </label>
+            <input
+              value={inviteForm.name}
+              onChange={e => setInviteForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Junior lawyer's name"
+              required
+              style={inp()} {...focus}
+            />
+          </div>
+
+          <div style={{ flex:"1 1 220px" }}>
+            <label style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#64748b", display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+              <Mail size={13} /> Email
+            </label>
+            <input
+              type="email"
+              value={inviteForm.email}
+              onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+              placeholder="junior@lawfirm.com"
+              required
+              style={inp()} {...focus}
+            />
+          </div>
+
+          <button type="submit" disabled={inviting} style={{
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            padding:"11px 20px", borderRadius:10, border:"none",
+            background: inviting ? "#93c5fd" : "#0f2744",
+            color:"#fff", fontSize:14, fontWeight:700,
+            cursor: inviting ? "not-allowed" : "pointer", fontFamily:"inherit",
+            whiteSpace:"nowrap", height:44,
+          }}>
+            <Send size={15} />
+            {inviting ? "Sending…" : "Send Invite"}
+          </button>
+        </form>
       </div>
     </div>
   );

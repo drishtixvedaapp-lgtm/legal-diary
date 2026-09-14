@@ -18,6 +18,7 @@ import LoginPage          from "./pages/LoginPage";
 import RegisterPage       from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage  from "./pages/ResetPasswordPage";
+import AcceptInvitePage   from "./pages/AcceptInvitePage";
 import ProtectedRoute     from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminDashboard     from "./pages/AdminDashboard";
@@ -47,6 +48,7 @@ function App() {
         <Route path="/verify-login-otp" element={<VerifyLoginOtpPage />} />
         <Route path="/forgot-password"       element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/accept-invite/:token"  element={<AcceptInvitePage />} />
 
         {/* ── Admin panel — requires login AND admin role ── */}
         <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
