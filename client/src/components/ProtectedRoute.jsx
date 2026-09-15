@@ -8,9 +8,10 @@ const ProtectedRoute = ({ children }) => {
     localStorage.getItem("userInfo")
   );
 
-  const { showWarning, staySignedIn } = useIdleTimeout(!!userInfo);
+  const { showWarning, staySignedIn, expired } = useIdleTimeout(!!userInfo);
 
   if (!userInfo) return <Navigate to="/login" />;
+  if (expired) return <Navigate to="/login" replace />;
 
   return (
     <>

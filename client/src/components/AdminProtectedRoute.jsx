@@ -8,10 +8,11 @@ const AdminProtectedRoute = ({ children }) => {
     localStorage.getItem("userInfo")
   );
 
-  const { showWarning, staySignedIn } = useIdleTimeout(!!userInfo && userInfo.role === "admin");
+  const { showWarning, staySignedIn, expired } = useIdleTimeout(!!userInfo && userInfo.role === "admin");
 
   if (!userInfo) return <Navigate to="/login" replace />;
   if (userInfo.role !== "admin") return <Navigate to="/dashboard" replace />;
+  if (expired) return <Navigate to="/login" replace />;
 
   return (
     <>

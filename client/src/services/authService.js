@@ -48,6 +48,14 @@ export const verifyLoginOtp =
       )
     );
 
+    // Mark this fresh login as the activity baseline for the idle timeout
+    // (see useIdleTimeout), so a stale timestamp from a prior session can't
+    // immediately log the user back out.
+    localStorage.setItem(
+      "lastActivityAt",
+      String(Date.now())
+    );
+
     return response.data;
 };
 
@@ -57,6 +65,10 @@ export const logoutUser = () => {
 
   localStorage.removeItem(
     "userInfo"
+  );
+
+  localStorage.removeItem(
+    "lastActivityAt"
   );
 };
 
